@@ -1,0 +1,223 @@
+// Prisma schema for JCode (NeonDB - PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  coordenacao
+  professor
+}
+
+enum ProvaStatus {
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+}
+
+enum QuestaoTipo {
+  objetiva
+  dissertativa
+}
+
+enum ReviewStatus {
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+model Escola {
+  id        String   @id @default(cuid())
+  nome      String
+  slug      String?  @unique
+  logo_url  String?
+  created_at DateTime @default(now())
+
+  turmas    Turma[]
+  materias  Materia[]
+  usuarios  Usuario[]
+  templates Template[]
+  provas    Prova[]
+  imagens   ImagemUpload[]
+}
+
+model Turma {
+  id             String  @id @default(cuid())
+  escola_id      String
+  nome_exibicao  String
+  ano_letivo     Int
+  turno          String
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+  provas Prova[]
+  profs ProfessorTurma[]
+
+  @@index([escola_id])
+}
+
+model Materia {
+  id        String  @id @default(cuid())
+  escola_id String
+  nome      String
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+  provas Prova[]
+  professorTurmaMaterias ProfessorTurmaMateria[]
+
+  @@index([escola_id])
+}
+
+model Usuario {
+  id         String @id @default(cuid())
+  escola_id  String
+  nome       String
+  email      String
+  role       Role
+  senha_hash String
+  ativo      Boolean @default(true)
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+  provas Prova[] @relation("ProvaAutor")
+  revisoes RevisaoCoordenacao[]
+  prof_turmas ProfessorTurma[] @relation("UsuarioProfessor")
+
+  @@unique([escola_id, email])
+  @@index([escola_id])
+}
+
+model ProfessorTurma {
+  id           String  @id @default(cuid())
+  professor_id String
+  turma_id     String
+
+  professor Usuario @relation("UsuarioProfessor", fields: [professor_id], references: [id])
+  turma     Turma    @relation(fields: [turma_id], references: [id])
+  materias  ProfessorTurmaMateria[]
+
+  @@index([professor_id])
+  @@index([turma_id])
+}
+
+model ProfessorTurmaMateria {
+  id                String @id @default(cuid())
+  professor_turma_id String
+  materia_id        String
+
+  professor_turma ProfessorTurma @relation(fields: [professor_turma_id], references: [id])
+  materia         Materia        @relation(fields: [materia_id], references: [id])
+
+  @@index([professor_turma_id])
+  @@index([materia_id])
+}
+
+model Template {
+  id         String  @id @default(cuid())
+  escola_id  String?
+  nome       String
+  regras_json Json
+  versao     String
+  ativo      Boolean @default(true)
+
+  escola Escola? @relation(fields: [escola_id], references: [id])
+  provas Prova[]
+
+  @@index([escola_id])
+}
+
+model Prova {
+  id             String      @id @default(cuid())
+  escola_id      String
+  autor_id       String
+  titulo_interno String
+  turma_id       String
+  materia_id     String
+  template_id    String
+  status         ProvaStatus @default(DRAFT)
+  render_opts_json Json?
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+
+  escola   Escola   @relation(fields: [escola_id], references: [id])
+  autor    Usuario  @relation("ProvaAutor", fields: [autor_id], references: [id])
+  turma    Turma    @relation(fields: [turma_id], references: [id])
+  materia  Materia  @relation(fields: [materia_id], references: [id])
+  template Template @relation(fields: [template_id], references: [id])
+  questoes Questao[]
+  analises AnaliseIA[]
+  imagens  ImagemUpload[]
+  revisoes RevisaoCoordenacao[]
+
+  @@index([escola_id])
+  @@index([autor_id])
+  @@index([turma_id])
+  @@index([materia_id])
+  @@index([template_id])
+}
+
+model Questao {
+  id               String      @id @default(cuid())
+  prova_id         String
+  ordem            Int
+  tipo             QuestaoTipo
+  enunciado        String
+  alternativas     Json?
+  correta_index    Int?
+  images_refs      Json?
+  images_inline_ids Json?
+
+  prova Prova @relation(fields: [prova_id], references: [id])
+
+  @@index([prova_id])
+}
+
+model ImagemUpload {
+  id               String  @id @default(cuid())
+  escola_id        String
+  prova_id         String
+  filename         String
+  storage_url      String
+  alt_text         String
+  legenda          String?
+  prefer_glossary  Boolean?
+  ref_code         String?
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+  prova  Prova  @relation(fields: [prova_id], references: [id])
+
+  @@index([escola_id])
+  @@index([prova_id])
+}
+
+model AnaliseIA {
+  id            String @id @default(cuid())
+  prova_id      String
+  resumo_scores Json
+  por_questao   Json
+  uso           Json
+  created_at    DateTime @default(now())
+
+  prova Prova @relation(fields: [prova_id], references: [id])
+
+  @@index([prova_id])
+}
+
+model RevisaoCoordenacao {
+  id             String       @id @default(cuid())
+  prova_id       String
+  coordenador_id String
+  status         ReviewStatus
+  comentario     String?
+  created_at     DateTime @default(now())
+
+  prova       Prova   @relation(fields: [prova_id], references: [id])
+  coordenador Usuario @relation(fields: [coordenador_id], references: [id])
+
+  @@index([prova_id])
+  @@index([coordenador_id])
+}

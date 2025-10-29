@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: JCode API
+  version: 0.1.0
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /health:
+    get:
+      summary: Healthcheck
+      responses:
+        '200': { description: OK }
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                senha: { type: string }
+              required: [email, senha]
+      responses:
+        '200': { description: JWT token }
+  /me:
+    get:
+      summary: Perfil do usuário atual
+      responses:
+        '200': { description: Perfil }
+  /escolas:
+    post:
+      summary: Criar escola (admin)
+      responses:
+        '201': { description: Criado }
+  /escolas/{id}/turmas:
+    post:
+      summary: Criar turma (admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '201': { description: Criado }
+  /escolas/{id}/materias:
+    post:
+      summary: Criar matéria (admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '201': { description: Criado }
+  /escolas/{id}/usuarios:
+    post:
+      summary: Criar usuário (admin)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '201': { description: Criado }
+  /vinculos/professor-turma:
+    post:
+      summary: Vincular professor-turma (admin)
+      responses:
+        '201': { description: Criado }
+  /vinculos/professor-turma-materia:
+    post:
+      summary: Vincular professor-turma-matéria (admin)
+      responses:
+        '201': { description: Criado }
+  /minhas-turmas:
+    get:
+      summary: Lista turmas do professor
+      responses:
+        '200': { description: OK }
+  /minhas-materias:
+    get:
+      summary: Lista matérias do professor (por turma)
+      parameters:
+        - in: query
+          name: turma_id
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /templates:
+    get:
+      summary: Lista templates
+      responses:
+        '200': { description: OK }
+  /templates/{id}:
+    get:
+      summary: Detalhe do template
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /provas:
+    post:
+      summary: Criar prova (professor)
+      responses:
+        '201': { description: Criado }
+  /provas/{id}:
+    put:
+      summary: Atualizar prova (professor)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /provas/{id}/analisar:
+    post:
+      summary: Executar análise IA
+      responses:
+        '200': { description: OK }
+  /uploads/imagem:
+    post:
+      summary: Upload de imagem (R2)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                prova_id:
+                  type: string
+                alt_text:
+                  type: string
+                legenda:
+                  type: string
+                prefer_glossary:
+                  type: boolean
+              required: [file, alt_text, prova_id]
+      responses:
+        '201': { description: Criado }
+      description: |
+        Aceita imagens (jpeg, png, webp, svg) e PDF. `prova_id` é obrigatório para gerar `ref_code` e vincular a imagem.
+  /provas/{id}/preview:
+    post:
+      summary: Gerar pré-visualização PDF
+      responses:
+        '200': { description: OK }
+  /provas/{id}/submit:
+    post:
+      summary: Enviar prova à coordenação
+      responses:
+        '200': { description: OK }
+  /provas/{id}/approve:
+    post:
+      summary: Aprovar prova (coordenação)
+      responses:
+        '200': { description: OK }
+  /provas/{id}/request-changes:
+    post:
+      summary: Solicitar ajustes (coordenação)
+      responses:
+        '200': { description: OK }
+  /provas/{id}/relatorio:
+    get:
+      summary: Relatório (coordenacao)
+      responses:
+        '200': { description: OK }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []

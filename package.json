@@ -1,0 +1,20 @@
+{
+  "name": "jcode",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws --if-present build",
+    "dev": "npm run -ws --if-present dev",
+    "lint": "npm run -ws --if-present lint",
+    "typecheck": "npm run -ws --if-present typecheck",
+    "setup:env": "node scripts/setup-env.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
