@@ -1,7 +1,13 @@
 import React from 'react';
 
-export function Card({ children, className = '' }: React.PropsWithChildren<{ className?: string }>) {
-  return <div className={`surface card ${className}`}>{children}</div>;
+type CardProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>;
+
+export function Card({ children, className = '', ...rest }: CardProps) {
+  return (
+    <div className={`surface card ${className}`} {...rest}>
+      {children}
+    </div>
+  );
 }
 
 export default Card;
