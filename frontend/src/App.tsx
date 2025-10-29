@@ -1,59 +1,43 @@
 import React from 'react';
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell, Header, Sidebar, Button, Card } from '@jcode/ui/src';
-
-function Nav() {
-  return (
-    <nav className="col" aria-label="Navegação principal">
-      <Link to="/professor">Professor</Link>
-      <Link to="/coordenacao">Coordenação</Link>
-      <Link to="/admin">Admin</Link>
-    </nav>
-  );
-}
+import SidebarNav from './components/SidebarNav';
 
 function ProfessorPage() {
   return (
-    <div className="col">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <div className="row" aria-label="Ações de prova">
-          <span>Status: DRAFT</span>
-        </div>
+    <div className="container">
+      <div className="status-bar">
+        <span className="muted">Status: DRAFT</span>
         <div className="row">
           <Button variant="outline">Salvar</Button>
           <Button variant="secondary">Pré-visualizar</Button>
           <Button>Enviar</Button>
         </div>
       </div>
-      <div className="row">
-        <Card style={{ flex: 1 }}>
+      <div className="page-grid-3">
+        <Card>
           <strong>Metadados</strong>
-          <div className="col">
-            <label>
-              Título interno
-              <input style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }} />
-            </label>
-            <label>
-              Turma
-              <input placeholder="Buscar turma..." style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }} />
-            </label>
-            <label>
-              Matéria
-              <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}>
-                <option>Selecionar</option>
-              </select>
-            </label>
-            <label>
-              Template
-              <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #ccc' }}>
-                <option>Objetiva Simples</option>
-                <option>Mista Bimestral</option>
-                <option>Simulado A/B</option>
-              </select>
-            </label>
+          <div className="col" style={{ marginTop: 8 }}>
+            <label className="label" htmlFor="titulo">Título interno</label>
+            <input id="titulo" className="input" />
+
+            <label className="label" htmlFor="turma">Turma</label>
+            <input id="turma" className="input" placeholder="Buscar turma..." />
+
+            <label className="label" htmlFor="materia">Matéria</label>
+            <select id="materia" className="select">
+              <option>Selecionar</option>
+            </select>
+
+            <label className="label" htmlFor="template">Template</label>
+            <select id="template" className="select">
+              <option>Objetiva Simples</option>
+              <option>Mista Bimestral</option>
+              <option>Simulado A/B</option>
+            </select>
           </div>
         </Card>
-        <Card style={{ flex: 2 }}>
+        <Card>
           <strong>Questões</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <div className="surface card" style={{ padding: 8 }}>
@@ -61,13 +45,11 @@ function ProfessorPage() {
             </div>
           </div>
         </Card>
-        <Card style={{ flex: 1 }}>
+        <Card>
           <strong>Painel IA</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <Button variant="secondary">Analisar</Button>
-            <div>
-              <small>Badges e sugestões por questão — stub</small>
-            </div>
+            <small className="muted">Badges e sugestões por questão — stub</small>
           </div>
         </Card>
       </div>
@@ -105,7 +87,7 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
   return (
     <AppShell
       header={<Header onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />}
-      sidebar={<Sidebar><Nav /></Sidebar>}
+      sidebar={<Sidebar><SidebarNav /></Sidebar>}
     >
       <Routes>
         <Route path="/" element={<Navigate to="/professor" replace />} />
