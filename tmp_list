@@ -23,7 +23,7 @@ router.post('/provas', requireAuth, async (req, res) => {
       template_id: body.template_id,
       status: 'DRAFT',
       questoes: body.questoes && body.questoes.length > 0 ? {
-        create: body.questoes.map((q: any, idx: number) => ({
+        create: body.questoes.map((q, idx) => ({
           ordem: idx + 1,
           tipo: q.tipo,
           enunciado: q.enunciado,
@@ -59,7 +59,7 @@ router.put('/provas/:id', requireAuth, async (req, res) => {
       await db.questao.deleteMany({ where: { prova_id: id } });
       if (body.questoes.length > 0) {
         await db.questao.createMany({
-          data: body.questoes.map((q: any, idx: number) => ({
+          data: body.questoes.map((q, idx) => ({
             prova_id: id,
             ordem: idx + 1,
             tipo: q.tipo,
@@ -105,7 +105,7 @@ router.post('/provas/:id/analisar', requireAuth, async (req, res) => {
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 router.post('/uploads/imagem', requireAuth, upload.single('file'), async (req, res) => {
   try {
-    const file = (req as any).file as any;
+    const file = req.file;
     const { prova_id, alt_text, legenda, prefer_glossary } = (req.body || {}) as Record<string, string>;
     if (!file) return res.status(400).json({ error: 'missing_file' });
     if (!alt_text || !alt_text.trim()) return res.status(400).json({ error: 'missing_alt_text' });
@@ -201,3 +201,4 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
 });
 
 export default router;
+
