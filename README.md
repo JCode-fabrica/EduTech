@@ -48,7 +48,22 @@ Pré-requisitos: Node 18+.
 
 - Variáveis (em `backend/.env`):
   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL`
-- Endpoint S3: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+- Endpoint S3 (SDK): `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+- Domínio público (para servir imagens): crie um Public Bucket (r2.dev) ou um domínio custom no painel da Cloudflare e use sua URL em `R2_PUBLIC_BASE_URL`.
 - Rota: `POST /api/uploads/imagem` (multipart)
   - Campos: `file` (binário), `alt_text` (obrigatório), `legenda`, `prefer_glossary`, `prova_id`
   - Resposta: registro criado em `ImagemUpload` com `storage_url` e `ref_code` (IMAGEM N)
+
+Exemplo de CORS no bucket (somente leitura via browser):
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:5173",
+      "https://seu-app.vercel.app"
+    ],
+    "AllowedMethods": ["GET", "HEAD", "OPTIONS"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
+    "MaxAgeSeconds": 86400
+  }
+]
