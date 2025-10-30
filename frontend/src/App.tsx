@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppShell, Sidebar, Button, Card } from '@jcode/ui/src';
 import SidebarNav from './components/SidebarNav';
 import ProtectedRoute from './routes/ProtectedRoute';
@@ -16,7 +16,7 @@ function ProfessorPage() {
         <span className="muted">Status: DRAFT</span>
         <div className="row">
           <Button variant="outline">Salvar</Button>
-          <Button variant="secondary">Pré-visualizar</Button>
+          <Button variant="secondary">Pre-visualizar</Button>
           <Button>Enviar</Button>
         </div>
       </div>
@@ -24,13 +24,13 @@ function ProfessorPage() {
         <Card>
           <strong>Metadados</strong>
           <div className="col" style={{ marginTop: 8 }}>
-            <label className="label" htmlFor="titulo">Título interno</label>
+            <label className="label" htmlFor="titulo">Titulo interno</label>
             <input id="titulo" className="input" />
 
             <label className="label" htmlFor="turma">Turma</label>
             <input id="turma" className="input" placeholder="Buscar turma..." />
 
-            <label className="label" htmlFor="materia">Matéria</label>
+            <label className="label" htmlFor="materia">Materia</label>
             <select id="materia" className="select">
               <option>Selecionar</option>
             </select>
@@ -44,10 +44,10 @@ function ProfessorPage() {
           </div>
         </Card>
         <Card>
-          <strong>Questões</strong>
+          <strong>Questoes</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <div className="surface card" style={{ padding: 8 }}>
-              <em>Lista de questões (drag & drop) — stub</em>
+              <em>Lista de questoes (drag & drop) — stub</em>
             </div>
           </div>
         </Card>
@@ -55,7 +55,7 @@ function ProfessorPage() {
           <strong>Painel IA</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <Button variant="secondary">Analisar</Button>
-            <small className="muted">Badges e sugestões por questão — stub</small>
+            <small className="muted">Badges e sugestoes por questao — stub</small>
           </div>
         </Card>
       </div>
@@ -67,8 +67,8 @@ function CoordenacaoPage() {
   return (
     <div className="col">
       <Card>
-        <strong>Revisão</strong>
-        <p>Abas: Análise IA, Conformidade Template, Imagens, Comentários — stub</p>
+        <strong>Revisao</strong>
+        <p>Abas: Analise IA, Conformidade Template, Imagens, Comentarios — stub</p>
         <div className="row">
           <Button variant="outline">Solicitar ajustes</Button>
           <Button>Aprovar</Button>
@@ -80,14 +80,26 @@ function CoordenacaoPage() {
 
 export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setTheme: (t: 'light' | 'dark') => void }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/login';
+  if (isAuthPage) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
   const TopBar = (
     <div className="header">
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <strong>JCode</strong>
+        <strong>EduTech</strong>
       </div>
       <div className="row">
         {user && <span className="muted">{user.nome} • {user.role}</span>}
-        <Button variant="outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Alternar tema">Tema</Button>
+        <Button variant="outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Alternar tema">
+          {theme === 'light' ? '🌙' : '☀️'}
+        </Button>
         {user ? (
           <Button variant="outline" onClick={logout}>Sair</Button>
         ) : null}

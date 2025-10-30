@@ -29,10 +29,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="container" style={{ paddingTop: 80, display: 'flex', justifyContent: 'center' }}>
-      <Card style={{ width: 380 }}>
+    <div className="login-screen">
+      <div className="login-bg">
+        <span className="blob a float-slow" />
+        <span className="blob b float-slow" style={{ animationDelay: '1.5s' }} />
+      </div>
+      <Card className="animate-fade-in-up card-glow" style={{ width: 420 }}>
         <div className="col">
-          <h2 style={{ margin: 0 }}><span className="brand-accent">J</span>Code</h2>
+          <h2 style={{ margin: 0 }}><span className="brand-accent">E</span>duTech</h2>
           <p className="muted">Acesse sua conta</p>
           <form className="col" onSubmit={submit}>
             <label className="label" htmlFor="email">E-mail</label>
@@ -49,4 +53,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

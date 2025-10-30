@@ -1,11 +1,11 @@
-# JCode — Plataforma de Criação, Análise e Aprovação de Provas
+# EduTech — Plataforma de Criação, Análise e Aprovação de Provas
 
 Monorepo com frontend (Vite + React), backend (Express + OpenAPI) e pacotes compartilhados (types, UI, config).
 
 ## Estrutura
 
 - `frontend` — SPA em React (Vite), modo dark/light, AppShell, páginas Professor/Coordenação/Admin
-- `backend` — API Express com rotas stubs e documentação OpenAPI em `/api/docs`
+- `backend` — API Express com rotas e documentação OpenAPI em `/api/docs`
 - `packages/types` — Tipos TS compartilhados (models e DTOs)
 - `packages/ui` — Tokens de tema e componentes básicos compartilhados
 - `packages/config` — Presets de ESLint/Prettier/TSConfig

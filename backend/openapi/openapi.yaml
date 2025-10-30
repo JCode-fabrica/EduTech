@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: JCode API
+  title: EduTech API
   version: 0.1.0
 servers:
   - url: http://localhost:4000/api

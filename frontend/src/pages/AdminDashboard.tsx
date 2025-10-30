@@ -89,7 +89,7 @@ export default function AdminDashboard() {
           <label className="label">Nome da escola</label>
           <input className="input" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
 
-          <label className="label">Endereço</label>
+          <label className="label">Endereco</label>
           <input className="input" value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
 
           <div className="row" style={{ gap: 12 }}>
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
 
           <div className="row" style={{ gap: 12 }}>
             <div className="col" style={{ flex: 1 }}>
-              <label className="label">Contato (e-mail)</label>
+              <label className="label">Contato (email)</label>
               <input className="input" value={form.contato_email} onChange={(e) => setForm({ ...form, contato_email: e.target.value })} />
             </div>
             <div className="col" style={{ flex: 1 }}>
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
 
           <div className="row" style={{ gap: 12 }}>
             <div className="col" style={{ flex: 1 }}>
-              <label className="label">Início do contrato</label>
+              <label className="label">Inicio do contrato</label>
               <input type="date" className="input" value={form.contrato_inicio} onChange={(e) => setForm({ ...form, contrato_inicio: e.target.value })} />
             </div>
             <div className="col" style={{ flex: 1 }}>
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <label className="label">Observações</label>
+          <label className="label">Observacoes</label>
           <textarea className="textarea" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
         </div>
       </Modal>

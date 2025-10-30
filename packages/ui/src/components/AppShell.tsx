@@ -1,15 +1,15 @@
 import React from 'react';
 import { Button } from './Button';
 
-export function Header({ onToggleTheme }: { onToggleTheme: () => void }) {
+export function Header({ onToggleTheme, theme = 'light' as 'light' | 'dark' }: { onToggleTheme: () => void; theme?: 'light' | 'dark' }) {
   return (
     <div className="header">
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <strong>JCode</strong>
+        <strong>EduTech</strong>
       </div>
       <div className="row">
         <Button variant="outline" onClick={onToggleTheme} aria-label="Alternar tema">
-          Tema
+          {theme === 'light' ? '🌙' : '☀️'}
         </Button>
       </div>
     </div>
