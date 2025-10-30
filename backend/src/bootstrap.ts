@@ -16,7 +16,7 @@ export async function bootstrapAdmin() {
   const hash = await bcrypt.hash(senha, 10);
   await prisma.usuario.create({
     data: {
-      escola_id: escola.id,
+      escola_id: null,
       nome: 'Admin JCode',
       email: process.env.ADMIN_EMAIL || 'admin@demo.com',
       role: 'admin',
@@ -28,4 +28,3 @@ export async function bootstrapAdmin() {
   await prisma.turma.create({ data: { escola_id: escola.id, nome_exibicao: '1A', ano_letivo: 2025, turno: 'manhã' } });
   await prisma.materia.create({ data: { escola_id: escola.id, nome: 'Matemática' } });
 }
-

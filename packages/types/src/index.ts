@@ -26,12 +26,13 @@ export interface Materia {
 
 export interface Usuario {
   id: string;
-  escola_id: string;
+  escola_id?: string | null; // null para admin global
   nome: string;
   email: string;
   role: Role;
   senha_hash?: string;
   ativo: boolean;
+  must_change_password?: boolean;
 }
 
 export interface ProfessorTurma {
@@ -134,7 +135,7 @@ export interface RevisaoCoordenacao {
 export interface LoginRequest { email: string; senha: string }
 export interface LoginResponse {
   token: string;
-  user: Pick<Usuario, 'id' | 'nome' | 'email' | 'role' | 'escola_id'>;
+  user: Pick<Usuario, 'id' | 'nome' | 'email' | 'role' | 'escola_id' | 'must_change_password'>;
 }
 
 export interface CreateProvaRequest {

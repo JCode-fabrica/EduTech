@@ -74,20 +74,20 @@ model Materia {
 }
 
 model Usuario {
-  id         String @id @default(cuid())
-  escola_id  String
-  nome       String
-  email      String
-  role       Role
-  senha_hash String
-  ativo      Boolean @default(true)
+  id                   String @id @default(cuid())
+  escola_id            String?
+  nome                 String
+  email                String @unique
+  role                 Role
+  senha_hash           String
+  ativo                Boolean @default(true)
+  must_change_password Boolean @default(false)
 
-  escola Escola @relation(fields: [escola_id], references: [id])
-  provas Prova[] @relation("ProvaAutor")
-  revisoes RevisaoCoordenacao[]
+  escola     Escola?           @relation(fields: [escola_id], references: [id])
+  provas     Prova[]           @relation("ProvaAutor")
+  revisoes   RevisaoCoordenacao[]
   prof_turmas ProfessorTurma[] @relation("UsuarioProfessor")
 
-  @@unique([escola_id, email])
   @@index([escola_id])
 }
 

@@ -4,6 +4,9 @@ import { AppShell, Sidebar, Button, Card } from '@jcode/ui/src';
 import SidebarNav from './components/SidebarNav';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/Login';
+import ChangePasswordPage from './pages/ChangePassword';
+import AdminDashboard from './pages/AdminDashboard';
+import SchoolDetail from './pages/SchoolDetail';
 import { useAuth } from './auth/AuthContext';
 
 function ProfessorPage() {
@@ -75,17 +78,6 @@ function CoordenacaoPage() {
   );
 }
 
-function AdminPage() {
-  return (
-    <div className="col">
-      <Card>
-        <strong>Admin</strong>
-        <p>Escolas, Turmas, Matérias, Usuários, Vínculos — stub</p>
-      </Card>
-    </div>
-  );
-}
-
 export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setTheme: (t: 'light' | 'dark') => void }) {
   const { user, logout } = useAuth();
   const TopBar = (
@@ -103,13 +95,11 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
     </div>
   );
   return (
-    <AppShell
-      header={TopBar}
-      sidebar={<Sidebar><SidebarNav /></Sidebar>}
-    >
+    <AppShell header={TopBar} sidebar={<Sidebar><SidebarNav /></Sidebar>}>
       <Routes>
         <Route path="/" element={<Navigate to={user ? '/professor' : '/login'} replace />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/alterar-senha" element={<ChangePasswordPage />} />
         <Route element={<ProtectedRoute allow={["professor"] as any} />}>
           <Route path="/professor" element={<ProfessorPage />} />
         </Route>
@@ -117,10 +107,12 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
           <Route path="/coordenacao" element={<CoordenacaoPage />} />
         </Route>
         <Route element={<ProtectedRoute allow={["admin"] as any} />}>
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/escolas/:id" element={<SchoolDetail />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );
 }
+
