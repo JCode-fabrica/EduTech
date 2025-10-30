@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { AuthProvider } from './auth/AuthContext';
 import '@jcode/ui/src/theme.css';
 
 function Root() {
@@ -12,7 +13,9 @@ function Root() {
   }, [theme]);
   return (
     <BrowserRouter>
-      <App theme={theme} setTheme={setTheme} />
+      <AuthProvider>
+        <App theme={theme} setTheme={setTheme} />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

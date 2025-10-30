@@ -1,7 +1,10 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AppShell, Header, Sidebar, Button, Card } from '@jcode/ui/src';
+import { AppShell, Sidebar, Button, Card } from '@jcode/ui/src';
 import SidebarNav from './components/SidebarNav';
+import ProtectedRoute from './routes/ProtectedRoute';
+import LoginPage from './pages/Login';
+import { useAuth } from './auth/AuthContext';
 
 function ProfessorPage() {
   return (
@@ -84,16 +87,39 @@ function AdminPage() {
 }
 
 export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setTheme: (t: 'light' | 'dark') => void }) {
+  const { user, logout } = useAuth();
+  const TopBar = (
+    <div className="header">
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <strong>JCode</strong>
+      </div>
+      <div className="row">
+        {user && <span className="muted">{user.nome} • {user.role}</span>}
+        <Button variant="outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Alternar tema">Tema</Button>
+        {user ? (
+          <Button variant="outline" onClick={logout}>Sair</Button>
+        ) : null}
+      </div>
+    </div>
+  );
   return (
     <AppShell
-      header={<Header onToggleTheme={() => setTheme(theme === 'light' ? 'dark' : 'light')} />}
+      header={TopBar}
       sidebar={<Sidebar><SidebarNav /></Sidebar>}
     >
       <Routes>
-        <Route path="/" element={<Navigate to="/professor" replace />} />
-        <Route path="/professor" element={<ProfessorPage />} />
-        <Route path="/coordenacao" element={<CoordenacaoPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/" element={<Navigate to={user ? '/professor' : '/login'} replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute allow={["professor"] as any} />}>
+          <Route path="/professor" element={<ProfessorPage />} />
+        </Route>
+        <Route element={<ProtectedRoute allow={["coordenacao"] as any} />}>
+          <Route path="/coordenacao" element={<CoordenacaoPage />} />
+        </Route>
+        <Route element={<ProtectedRoute allow={["admin"] as any} />}>
+          <Route path="/admin" element={<AdminPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );

@@ -1,18 +1,25 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
 export default function SidebarNav() {
+  const { user } = useAuth();
   return (
     <div className="sidebar-inner">
       <div className="brand">
         <span className="brand-accent">J</span>Code
       </div>
       <nav className="nav" aria-label="Navegação principal">
-        <NavLink to="/professor" className={({ isActive }) => (isActive ? 'active' : '')}>Professor</NavLink>
-        <NavLink to="/coordenacao" className={({ isActive }) => (isActive ? 'active' : '')}>Coordenação</NavLink>
-        <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>Admin</NavLink>
+        {(!user || user.role === 'professor') && (
+          <NavLink to="/professor" className={({ isActive }) => (isActive ? 'active' : '')}>Professor</NavLink>
+        )}
+        {user && user.role === 'coordenacao' && (
+          <NavLink to="/coordenacao" className={({ isActive }) => (isActive ? 'active' : '')}>Coordenação</NavLink>
+        )}
+        {user && user.role === 'admin' && (
+          <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>Admin</NavLink>
+        )}
       </nav>
     </div>
   );
 }
-
