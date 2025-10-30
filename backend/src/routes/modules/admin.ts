@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { prisma } from '../../db';
+import bcrypt from 'bcryptjs';
 
 export const router = Router();
 
@@ -20,8 +21,11 @@ router.post('/escolas/:id/materias', requireAuth, requireRole(['admin']), async 
 });
 
 router.post('/escolas/:id/usuarios', requireAuth, requireRole(['admin']), async (req, res) => {
-  const created = await prisma.usuario.create({ data: { ...req.body, escola_id: req.params.id } });
-  return res.status(201).json(created);
+  const { senha, ...rest } = req.body || {};
+  let senha_hash: string | undefined;
+  if (typeof senha === 'string' && senha.length > 0) senha_hash = await bcrypt.hash(senha, 10);
+  const created = await prisma.usuario.create({ data: { ...rest, senha_hash: senha_hash || rest.senha_hash, escola_id: req.params.id } });
+  return res.status(201).json({ ...created, senha_hash: undefined });
 });
 
 router.post('/vinculos/professor-turma', requireAuth, requireRole(['admin']), async (req, res) => {
