@@ -8,6 +8,14 @@ export interface Escola {
   slug?: string | null;
   logo_url?: string | null;
   created_at: string;
+  endereco?: string | null;
+  contato_nome?: string | null;
+  contato_cpf?: string | null;
+  contato_email?: string | null;
+  contato_tel?: string | null;
+  contrato_inicio?: string | null; // ISO date
+  contrato_fim?: string | null; // ISO date
+  observacoes?: string | null;
 }
 
 export interface Turma {

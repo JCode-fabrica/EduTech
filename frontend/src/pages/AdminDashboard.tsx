@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button } from '@jcode/ui/src';
+import { Card, Button, Modal } from '@jcode/ui/src';
 import { api } from '../lib/api';
 import { Link } from 'react-router-dom';
 
@@ -8,25 +8,42 @@ type EscolaCard = { id: string; nome: string; slug?: string | null; coordenadore
 export default function AdminDashboard() {
   const [items, setItems] = useState<EscolaCard[]>([]);
   const [creating, setCreating] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    nome: '',
+    endereco: '',
+    contato_nome: '',
+    contato_cpf: '',
+    contato_email: '',
+    contato_tel: '',
+    contrato_inicio: '',
+    contrato_fim: '',
+    observacoes: ''
+  });
   useEffect(() => {
     api<EscolaCard[]>('/escolas').then(setItems).catch(() => setItems([]));
   }, []);
 
-  async function createSchool() {
+  function openCreate() {
+    setForm({ nome: '', endereco: '', contato_nome: '', contato_cpf: '', contato_email: '', contato_tel: '', contrato_inicio: '', contrato_fim: '', observacoes: '' });
+    setOpen(true);
+  }
+
+  async function submitCreate() {
     if (creating) return;
-    const nome = prompt('Nome da escola');
-    if (!nome) return;
+    if (!form.nome.trim()) { alert('Informe o nome da escola'); return; }
     setCreating(true);
-    const slug = nome
+    const slug = form.nome
       .toLowerCase()
       .normalize('NFD')
       .replace(/\p{Diacritic}/gu, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
     try {
-      await api('/escolas', { method: 'POST', body: JSON.stringify({ nome, slug }) });
+      await api('/escolas', { method: 'POST', body: JSON.stringify({ ...form, slug }) });
       const list = await api<EscolaCard[]>('/escolas');
       setItems(list);
+      setOpen(false);
     } catch (e) {
       alert('Falha ao criar escola');
     } finally {
@@ -38,7 +55,7 @@ export default function AdminDashboard() {
     <div className="container">
       <div className="status-bar">
         <h2 style={{ margin: 0 }}>Escolas</h2>
-        <Button onClick={createSchool} disabled={creating}>{creating ? 'Criando...' : 'Nova escola'}</Button>
+        <Button onClick={openCreate}>Nova escola</Button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
         {items.map((e) => (
@@ -63,6 +80,55 @@ export default function AdminDashboard() {
           </Card>
         )}
       </div>
+      <Modal open={open} title="Nova escola" onClose={() => setOpen(false)}
+        footer={<>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={submitCreate} disabled={creating}>{creating ? 'Criando...' : 'Criar'}</Button>
+        </>}>
+        <div className="col" style={{ gap: 10 }}>
+          <label className="label">Nome da escola</label>
+          <input className="input" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+
+          <label className="label">Endereço</label>
+          <input className="input" value={form.endereco} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
+
+          <div className="row" style={{ gap: 12 }}>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Contato (nome)</label>
+              <input className="input" value={form.contato_nome} onChange={(e) => setForm({ ...form, contato_nome: e.target.value })} />
+            </div>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Contato (CPF)</label>
+              <input className="input" value={form.contato_cpf} onChange={(e) => setForm({ ...form, contato_cpf: e.target.value })} />
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 12 }}>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Contato (e-mail)</label>
+              <input className="input" value={form.contato_email} onChange={(e) => setForm({ ...form, contato_email: e.target.value })} />
+            </div>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Contato (telefone)</label>
+              <input className="input" value={form.contato_tel} onChange={(e) => setForm({ ...form, contato_tel: e.target.value })} />
+            </div>
+          </div>
+
+          <div className="row" style={{ gap: 12 }}>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Início do contrato</label>
+              <input type="date" className="input" value={form.contrato_inicio} onChange={(e) => setForm({ ...form, contrato_inicio: e.target.value })} />
+            </div>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Fim do contrato</label>
+              <input type="date" className="input" value={form.contrato_fim} onChange={(e) => setForm({ ...form, contrato_fim: e.target.value })} />
+            </div>
+          </div>
+
+          <label className="label">Observações</label>
+          <textarea className="textarea" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+        </div>
+      </Modal>
     </div>
   );
 }

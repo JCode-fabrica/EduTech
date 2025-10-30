@@ -38,6 +38,14 @@ model Escola {
   slug      String?  @unique
   logo_url  String?
   created_at DateTime @default(now())
+  endereco   String?
+  contato_nome String?
+  contato_cpf  String?
+  contato_email String?
+  contato_tel   String?
+  contrato_inicio DateTime?
+  contrato_fim    DateTime?
+  observacoes  String?
 
   turmas    Turma[]
   materias  Materia[]

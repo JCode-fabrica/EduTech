@@ -21,12 +21,40 @@ router.get('/escolas', requireAuth, requireRole(['admin']), async (_req, res) =>
 });
 
 router.post('/escolas', requireAuth, requireRole(['admin']), async (req, res) => {
-  const created = await prisma.escola.create({ data: req.body });
+  const body = req.body || {};
+  let { nome, slug } = body as { nome: string; slug?: string };
+  if (!nome || !nome.trim()) return res.status(400).json({ error: 'invalid_nome' });
+  if (!slug) {
+    slug = nome
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  const created = await prisma.escola.create({
+    data: {
+      nome,
+      slug,
+      endereco: body.endereco || null,
+      contato_nome: body.contato_nome || null,
+      contato_cpf: body.contato_cpf || null,
+      contato_email: body.contato_email || null,
+      contato_tel: body.contato_tel || null,
+      contrato_inicio: body.contrato_inicio ? new Date(body.contrato_inicio) : null,
+      contrato_fim: body.contrato_fim ? new Date(body.contrato_fim) : null,
+      observacoes: body.observacoes || null
+    }
+  });
   return res.status(201).json(created);
 });
 
 router.put('/escolas/:id', requireAuth, requireRole(['admin']), async (req, res) => {
-  const updated = await prisma.escola.update({ where: { id: req.params.id }, data: req.body });
+  const body = req.body || {};
+  const data: any = { ...body };
+  if (body.contrato_inicio) data.contrato_inicio = new Date(body.contrato_inicio);
+  if (body.contrato_fim) data.contrato_fim = new Date(body.contrato_fim);
+  const updated = await prisma.escola.update({ where: { id: req.params.id }, data });
   return res.json(updated);
 });
 
