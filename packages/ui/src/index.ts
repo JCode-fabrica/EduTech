@@ -4,4 +4,4 @@ export * from './components/Card';
 export * from './components/Table';
 export * from './components/Modal';
 // CSS tokens
-// Consumers must import '@jcode/ui/theme.css'
+// Consumers must import '@edutech/ui/theme.css'

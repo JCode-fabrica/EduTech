@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Modal } from '@jcode/ui/src';
+import { Card, Button, Modal } from '@edutech/ui';
 import { api } from '../lib/api';
 import { Link } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [items, setItems] = useState<EscolaCard[]>([]);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({
     nome: '',
     endereco: '',
@@ -31,7 +32,7 @@ export default function AdminDashboard() {
 
   async function submitCreate() {
     if (creating) return;
-    if (!form.nome.trim()) { alert('Informe o nome da escola'); return; }
+    if (!form.nome.trim()) { setFormError('Informe o nome da escola'); return; }
     setCreating(true);
     const slug = form.nome
       .toLowerCase()
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
       setItems(list);
       setOpen(false);
     } catch (e) {
-      alert('Falha ao criar escola');
+      setFormError('Falha ao criar escola');
     } finally {
       setCreating(false);
     }
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
           <Button onClick={submitCreate} disabled={creating}>{creating ? 'Criando...' : 'Criar'}</Button>
         </>}>
         <div className="col" style={{ gap: 10 }}>
+          {formError && <small style={{ color: 'var(--danger)' }}>{formError}</small>}
           <label className="label">Nome da escola</label>
           <input className="input" value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
 

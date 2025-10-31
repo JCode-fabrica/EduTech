@@ -1,4 +1,4 @@
-// Prisma schema for JCode (NeonDB - PostgreSQL)
+// Prisma schema for EduTech (NeonDB - PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"

@@ -114,6 +114,12 @@ a:hover { opacity: 0.9; }
 .login-bg .blob { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(80px); opacity: .35; }
 .login-bg .blob.a { top: 10%; left: 10%; background: var(--accent); }
 .login-bg .blob.b { bottom: 10%; right: 15%; background: var(--brand); }
+.login-toggle { position: fixed; top: 14px; right: 14px; z-index: 60; }
+
+[data-theme="dark"] .login-screen {
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(56,189,248,0.18), transparent), radial-gradient(1000px 500px at 100% 10%, rgba(255,45,107,0.18), transparent), var(--bg);
+}
+[data-theme="dark"] .card-glow { box-shadow: var(--shadow), 0 18px 60px rgba(56,189,248,0.25); }
 
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 50; }

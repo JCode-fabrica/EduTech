@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button } from '@jcode/ui/src';
+import { Card, Button } from '@edutech/ui';
 import { api } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
 import { useSelectedSchool } from '../../admin/useAdminSchool';
@@ -8,9 +8,10 @@ export default function AdminIntegrations() {
   const { schoolId } = useSelectedSchool();
   const [keys, setKeys] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [newToken, setNewToken] = useState<string | null>(null);
   const load = async () => { if (!schoolId) return; const ks = await api<any[]>(`/escolas/${schoolId}/api-keys`); setKeys(ks); };
   useEffect(() => { load(); }, [schoolId]);
-  const createKey = async () => { if (!schoolId) return; setBusy(true); try { const res = await api<any>(`/escolas/${schoolId}/api-keys`, { method: 'POST', body: JSON.stringify({ name: 'default' }) }); alert(`Nova API key: ${res.token}`); await load(); } finally { setBusy(false); } };
+  const createKey = async () => { if (!schoolId) return; setBusy(true); try { const res = await api<any>(`/escolas/${schoolId}/api-keys`, { method: 'POST', body: JSON.stringify({ name: 'default' }) }); setNewToken(res.token); await load(); } finally { setBusy(false); } };
   const disable = async (id: string) => { await api(`/api-keys/${id}/disable`, { method: 'PATCH' }); await load(); };
   return (
     <div className="container">
@@ -31,6 +32,16 @@ export default function AdminIntegrations() {
             </div>
           ))}
           {keys.length === 0 && <small className="muted">Sem keys</small>}
+          {newToken && (
+            <div className="surface card" style={{ marginTop: 10, padding: 10 }}>
+              <strong>Nova API Key</strong>
+              <small className="muted"> Copie e guarde com segurança. </small>
+              <div style={{ userSelect: 'all' }}><code>{newToken}</code></div>
+              <div className="row" style={{ justifyContent: 'flex-end' }}>
+                <Button variant="outline" onClick={() => setNewToken(null)}>Fechar</Button>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

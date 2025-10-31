@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card } from '@jcode/ui/src';
+import { Card } from '@edutech/ui';
 import { api } from '../../lib/api';
 
 export default function AdminOverview() {

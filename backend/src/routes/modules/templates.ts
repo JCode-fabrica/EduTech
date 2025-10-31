@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { prisma } from '../../db';
+import { Prisma } from '@prisma/client';
 
 export const router = Router();
 
@@ -55,13 +56,25 @@ router.get('/templates/:id', requireAuth, async (req, res) => {
 // CRUD básico para admin
 router.post('/templates', requireAuth, requireRole(['admin']), async (req, res) => {
   const body = req.body || {};
-  const created = await prisma.template.create({ data: { nome: body.nome, regras_json: body.regras_json || {}, versao: body.versao || '1.0.0', ativo: true, escola_id: body.escola_id || null } });
+  const created = await prisma.template.create({
+    data: {
+      nome: body.nome,
+      regras_json: (body.regras_json ?? {}) as Prisma.InputJsonValue,
+      versao: body.versao || '1.0.0',
+      ativo: true,
+      escola_id: body.escola_id || null
+    }
+  });
   return res.status(201).json(created);
 });
 
 router.put('/templates/:id', requireAuth, requireRole(['admin']), async (req, res) => {
   const body = req.body || {};
-  const updated = await prisma.template.update({ where: { id: req.params.id }, data: { nome: body.nome, regras_json: body.regras_json, versao: body.versao, ativo: body.ativo } });
+  const regras = body.regras_json === null ? Prisma.JsonNull : (body.regras_json as Prisma.InputJsonValue | undefined);
+  const updated = await prisma.template.update({
+    where: { id: req.params.id },
+    data: { nome: body.nome, regras_json: regras, versao: body.versao, ativo: body.ativo }
+  });
   return res.json(updated);
 });
 
@@ -80,7 +93,10 @@ router.post('/templates/:id/validate', requireAuth, requireRole(['admin']), asyn
     const ordem = prova.questoes.map((q: any) => q.tipo);
     if (regras.secoes.join(',') === 'objetivas,dissertativas') {
       let seen = false;
-      for (const t of ordem) { if (t === 'dissertativa') seen = true; if (t === 'objetiva' && seen) issues.push('ordem_objetivas_primeiro'); }
+      for (const t of ordem) {
+        if (t === 'dissertativa') seen = true;
+        if (t === 'objetiva' && seen) issues.push('ordem_objetivas_primeiro');
+      }
     }
   }
   return res.json({ ok: issues.length === 0, issues });
@@ -96,10 +112,12 @@ router.post('/templates/:id/duplicate', requireAuth, requireRole(['admin']), asy
   const base = await prisma.template.findFirst({ where: { id: req.params.id } });
   if (!base) return res.status(404).json({ error: 'not_found' });
   const versao = (req.body?.versao as string) || `${base.versao || '1.0.0'}-copy`;
+  const regras = base.regras_json === null ? Prisma.JsonNull : (base.regras_json as Prisma.InputJsonValue);
   const created = await prisma.template.create({
-    data: { escola_id: base.escola_id, nome: `${base.nome} (copy)`, regras_json: base.regras_json, versao, ativo: true }
+    data: { escola_id: base.escola_id, nome: `${base.nome} (copy)`, regras_json: regras, versao, ativo: true }
   });
   return res.status(201).json(created);
 });
 
 export default router;
+

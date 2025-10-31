@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AppShell, Sidebar, Button, Card } from '@jcode/ui/src';
+import { AppShell, Sidebar, Button, Card } from '@edutech/ui';
 import SidebarNav from './components/SidebarNav';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/Login';
@@ -27,7 +27,7 @@ function ProfessorPage() {
         <span className="muted">Status: DRAFT</span>
         <div className="row">
           <Button variant="outline">Salvar</Button>
-          <Button variant="secondary">Pre-visualizar</Button>
+          <Button variant="secondary">Pré-visualizar</Button>
           <Button>Enviar</Button>
         </div>
       </div>
@@ -35,13 +35,13 @@ function ProfessorPage() {
         <Card>
           <strong>Metadados</strong>
           <div className="col" style={{ marginTop: 8 }}>
-            <label className="label" htmlFor="titulo">Titulo interno</label>
+            <label className="label" htmlFor="titulo">Título interno</label>
             <input id="titulo" className="input" />
 
             <label className="label" htmlFor="turma">Turma</label>
             <input id="turma" className="input" placeholder="Buscar turma..." />
 
-            <label className="label" htmlFor="materia">Materia</label>
+            <label className="label" htmlFor="materia">Matéria</label>
             <select id="materia" className="select">
               <option>Selecionar</option>
             </select>
@@ -55,10 +55,10 @@ function ProfessorPage() {
           </div>
         </Card>
         <Card>
-          <strong>Questoes</strong>
+          <strong>Questões</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <div className="surface card" style={{ padding: 8 }}>
-              <em>Lista de questoes (drag & drop) — stub</em>
+              <em>Lista de questões (drag & drop) — stub</em>
             </div>
           </div>
         </Card>
@@ -66,7 +66,7 @@ function ProfessorPage() {
           <strong>Painel IA</strong>
           <div className="col" style={{ marginTop: 8 }}>
             <Button variant="secondary">Analisar</Button>
-            <small className="muted">Badges e sugestoes por questao — stub</small>
+            <small className="muted">Badges e sugestões por questão — stub</small>
           </div>
         </Card>
       </div>
@@ -78,8 +78,8 @@ function CoordenacaoPage() {
   return (
     <div className="col">
       <Card>
-        <strong>Revisao</strong>
-        <p>Abas: Analise IA, Conformidade Template, Imagens, Comentarios — stub</p>
+        <strong>Revisão</strong>
+        <p>Abas: Análise IA, Conformidade Template, Imagens, Comentários — stub</p>
         <div className="row">
           <Button variant="outline">Solicitar ajustes</Button>
           <Button>Aprovar</Button>
@@ -107,7 +107,7 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
         <strong>EduTech</strong>
       </div>
       <div className="row">
-        {user && <span className="muted">{user.nome} • {user.role}</span>}
+        {user && <span className="muted">{user.nome} · {user.role}</span>}
         <Button variant="outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Alternar tema">
           {theme === 'light' ? '🌙' : '☀️'}
         </Button>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Modal } from '@jcode/ui/src';
+import { Card, Button, Modal } from '@edutech/ui';
 import { api } from '../../lib/api';
 
 export default function AdminTemplates() {

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card } from '@jcode/ui/src';
+import { Button, Card } from '@edutech/ui';
 import { useAuth } from '../auth/AuthContext';
 
 export default function LoginPage() {
@@ -10,6 +10,12 @@ export default function LoginPage() {
   const [senha, setSenha] = useState('demo');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState<'light'|'dark'>(() => (localStorage.getItem('theme') as 'light'|'dark') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,11 +23,10 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, senha);
-      // rota padrão simples por e-mail para demo
       if (email.includes('admin')) navigate('/admin');
       else if (email.includes('coord')) navigate('/coordenacao');
       else navigate('/professor');
-    } catch (err: any) {
+    } catch {
       setError('Falha no login');
     } finally {
       setLoading(false);
@@ -30,6 +35,11 @@ export default function LoginPage() {
 
   return (
     <div className="login-screen">
+      <div className="login-toggle">
+        <Button variant="outline" aria-label="Alternar tema" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          {theme === 'light' ? '🌙' : '☀️'}
+        </Button>
+      </div>
       <div className="login-bg">
         <span className="blob a float-slow" />
         <span className="blob b float-slow" style={{ animationDelay: '1.5s' }} />

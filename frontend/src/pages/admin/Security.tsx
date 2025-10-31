@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from '@jcode/ui/src';
+import { Card } from '@edutech/ui';
 
 export default function Security() {
   return (
@@ -11,4 +11,3 @@ export default function Security() {
     </div>
   );
 }
-

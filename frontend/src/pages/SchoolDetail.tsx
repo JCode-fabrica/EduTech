@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Button, Card, Modal } from '@jcode/ui/src';
+import { Button, Card, Modal } from '@edutech/ui';
 import { api } from '../lib/api';
 
 type Escola = { id: string; nome: string; slug?: string | null; logo_url?: string | null; pdf_capa_url?: string | null; pdf_footer?: string | null };
@@ -24,6 +24,8 @@ export default function SchoolDetail() {
   const [footer, setFooter] = useState('');
   const [policy, setPolicy] = useState<any>({});
   const [keys, setKeys] = useState<any[]>([]);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [newApiToken, setNewApiToken] = useState<string | null>(null);
 
   async function load() {
     const data = await api<{ escola: Escola; turmas: Turma[]; usuarios: Usuario[]; materias: Materia[] }>(`/escolas/${id}`);
@@ -59,12 +61,12 @@ export default function SchoolDetail() {
 
   async function savePolicy() {
     await api(`/escolas/${id}/policy`, { method: 'PUT', body: JSON.stringify(policy) });
-    alert('Policy salva');
+    setNotice('Política salva');
   }
 
   async function createKey() {
     const res = await api<any>(`/escolas/${id}/api-keys`, { method: 'POST', body: JSON.stringify({ name: 'default' }) });
-    alert(`Nova API key: ${res.token}`);
+    setNewApiToken(res.token);
     const ks = await api<any[]>(`/escolas/${id}/api-keys`);
     setKeys(ks);
   }
@@ -109,6 +111,7 @@ export default function SchoolDetail() {
   return (
     <>
       <div className="container">
+        {notice && <div className="surface card" style={{ marginBottom: 12, padding: 10, borderLeft: '4px solid var(--success)' }}><small>{notice}</small></div>}
         <h2 style={{ marginTop: 0 }}>Escola</h2>
         <Card>
           <div className="row" style={{ alignItems: 'center', gap: 12 }}>
@@ -247,6 +250,18 @@ export default function SchoolDetail() {
           <label className="label">Email</label>
           <input className="input" value={coordForm.email} onChange={(e) => setCoordForm({ ...coordForm, email: e.target.value })} />
           <small className="muted">Uma senha temporaria sera gerada e mostrada apos criar. No primeiro acesso sera exigida a troca.</small>
+        </div>
+      </Modal>
+
+      <Modal open={!!newApiToken} title="Nova API Key" onClose={() => setNewApiToken(null)}
+        footer={<>
+          <Button onClick={() => setNewApiToken(null)}>Fechar</Button>
+        </>}>
+        <div className="col" style={{ gap: 10 }}>
+          <small className="muted">Copie e guarde sua chave com segurança. Ela será mostrada apenas uma vez.</small>
+          <div className="surface card" style={{ padding: 10, userSelect: 'all' }}>
+            <code>{newApiToken}</code>
+          </div>
         </div>
       </Modal>
     </>

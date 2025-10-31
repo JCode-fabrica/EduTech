@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button } from '@jcode/ui/src';
+import { Card, Button } from '@edutech/ui';
 import { api } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
 import { useSelectedSchool } from '../../admin/useAdminSchool';

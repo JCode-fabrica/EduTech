@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Modal } from '@jcode/ui/src';
+import { Card, Button, Modal } from '@edutech/ui';
 import { api } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
 import { useSelectedSchool } from '../../admin/useAdminSchool';
@@ -8,6 +8,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [newInviteToken, setNewInviteToken] = useState<string | null>(null);
   const [form, setForm] = useState({ escola_id: '', email: '', role: 'professor' });
   const { schoolId } = useSelectedSchool();
   const load = async () => { const u = await api<any[]>(`/admin/users${schoolId ? `?escola_id=${schoolId}` : ''}`); setUsers(u); };
@@ -17,7 +18,7 @@ export default function AdminUsers() {
     setBusy(true);
     try {
       const res = await api<any>('/admin/users/invite', { method: 'POST', body: JSON.stringify(form) });
-      alert(`Convite criado. Token: ${res.token}`);
+      setNewInviteToken(res.token);
       setOpen(false);
     } finally { setBusy(false); }
   };
@@ -33,7 +34,7 @@ export default function AdminUsers() {
           {users.map((u) => (
             <div key={u.id} className="row" style={{ justifyContent: 'space-between' }}>
               <span>{u.nome || '(sem nome)'} — {u.email}</span>
-              <span className="muted">{u.role} {u.escola_id ? `• ${u.escola_id}` : ''}</span>
+              <span className="muted">{u.role} {u.escola_id ? `· ${u.escola_id}` : ''}</span>
             </div>
           ))}
           {users.length === 0 && <small className="muted">Sem usuários</small>}
@@ -58,6 +59,17 @@ export default function AdminUsers() {
           <small className="muted">Será gerado um token de convite válido por 60 minutos. Use /auth/accept-invite com token para concluir.</small>
         </div>
       </Modal>
+      {newInviteToken && (
+        <Modal open={true} title="Convite criado" onClose={() => setNewInviteToken(null)}
+          footer={<Button onClick={() => setNewInviteToken(null)}>Fechar</Button>}>
+          <div className="col" style={{ gap: 8 }}>
+            <small className="muted">Use este token para aceitar o convite:</small>
+            <div className="surface card" style={{ padding: 10, userSelect: 'all' }}>
+              <code>{newInviteToken}</code>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

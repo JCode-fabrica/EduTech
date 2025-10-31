@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card } from '@jcode/ui/src';
+import { Button, Card } from '@edutech/ui';
 import { api } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -50,4 +50,3 @@ export default function ChangePasswordPage() {
     </div>
   );
 }
-

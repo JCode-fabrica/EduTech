@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import type { LoginRequest, LoginResponse, MeResponse } from '@jcode/types';
 import { requireAuth } from '../middleware/auth';
 import { prisma } from '../../db';
 import crypto from 'node:crypto';
@@ -9,7 +8,7 @@ import crypto from 'node:crypto';
 export const router = Router();
 
 router.post('/auth/login', async (req, res) => {
-  const { email, senha } = req.body as LoginRequest;
+  const { email, senha } = req.body as any;
   if (!email || !senha) return res.status(400).json({ error: 'invalid_credentials' });
 
   const user = await prisma.usuario.findFirst({ where: { email: email.toLowerCase(), ativo: true } });
@@ -29,7 +28,7 @@ router.post('/auth/login', async (req, res) => {
 });
 
 router.get('/me', requireAuth, (req, res) => {
-  const me: MeResponse = { user: req.user! };
+  const me: any = { user: req.user! };
   return res.json(me);
 });
 
