@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 
-type Role = 'admin' | 'coordenacao' | 'professor';
+export type Role = 'admin' | 'coordenacao' | 'professor';
 type MeUser = { id: string; nome: string; email: string; role: Role; escola_id?: string | null; must_change_password?: boolean };
 type MeResponse = { user: MeUser };
 type LoginResponse = { token: string; user: MeUser };

@@ -7,6 +7,17 @@ import LoginPage from './pages/Login';
 import ChangePasswordPage from './pages/ChangePassword';
 import AdminDashboard from './pages/AdminDashboard';
 import SchoolDetail from './pages/SchoolDetail';
+import AdminOverview from './pages/admin/Overview';
+import AdminUsers from './pages/admin/Users';
+import ClassesSubjects from './pages/admin/ClassesSubjects';
+import AdminTemplates from './pages/admin/Templates';
+import AIQuotas from './pages/admin/AIQuotas';
+import AdminReports from './pages/admin/Reports';
+import AdminLogs from './pages/admin/Logs';
+import AdminIntegrations from './pages/admin/Integrations';
+import StoragePDF from './pages/admin/StoragePDF';
+import Security from './pages/admin/Security';
+import Observability from './pages/admin/Observability';
 import { useAuth } from './auth/AuthContext';
 
 function ProfessorPage() {
@@ -119,12 +130,23 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
           <Route path="/coordenacao" element={<CoordenacaoPage />} />
         </Route>
         <Route element={<ProtectedRoute allow={["admin"] as any} />}>
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+          <Route path="/admin/overview" element={<AdminOverview />} />
+          <Route path="/admin/escolas" element={<AdminDashboard />} />
           <Route path="/admin/escolas/:id" element={<SchoolDetail />} />
+          <Route path="/admin/usuarios" element={<AdminUsers />} />
+          <Route path="/admin/turmas-materias" element={<ClassesSubjects />} />
+          <Route path="/admin/templates" element={<AdminTemplates />} />
+          <Route path="/admin/ia-cotas" element={<AIQuotas />} />
+          <Route path="/admin/relatorios" element={<AdminReports />} />
+          <Route path="/admin/logs" element={<AdminLogs />} />
+          <Route path="/admin/integracoes" element={<AdminIntegrations />} />
+          <Route path="/admin/storage-pdfs" element={<StoragePDF />} />
+          <Route path="/admin/seguranca" element={<Security />} />
+          <Route path="/admin/observabilidade" element={<Observability />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );
 }
-

@@ -46,6 +46,8 @@ model Escola {
   contrato_inicio DateTime?
   contrato_fim    DateTime?
   observacoes  String?
+  pdf_footer   String?
+  pdf_capa_url String?
 
   turmas    Turma[]
   materias  Materia[]
@@ -53,6 +55,11 @@ model Escola {
   templates Template[]
   provas    Prova[]
   imagens   ImagemUpload[]
+  policies  EscolaPolicy[]
+  apiKeys   ApiKey[]
+  logs      AuditLog[]
+  jobs      Job[]
+  invites   InviteToken[]
 }
 
 model Turma {
@@ -95,6 +102,7 @@ model Usuario {
   provas     Prova[]           @relation("ProvaAutor")
   revisoes   RevisaoCoordenacao[]
   prof_turmas ProfessorTurma[] @relation("UsuarioProfessor")
+  audit_logs AuditLog[] @relation("UsuarioAuditLogs")
 
   @@index([escola_id])
 }
@@ -208,6 +216,9 @@ model AnaliseIA {
   resumo_scores Json
   por_questao   Json
   uso           Json
+  tokens_in     Int?   @default(0)
+  tokens_out    Int?   @default(0)
+  cost_cents    Int?   @default(0)
   created_at    DateTime @default(now())
 
   prova Prova @relation(fields: [prova_id], references: [id])
@@ -228,4 +239,75 @@ model RevisaoCoordenacao {
 
   @@index([prova_id])
   @@index([coordenador_id])
+}
+
+model EscolaPolicy {
+  id               String  @id @default(cuid())
+  escola_id        String
+  aderencia_min    Int?
+  coerencia_min    Int?
+  imagens_modo     String?
+  templates_obrig  Json?
+  max_professores  Int?
+  analises_mes     Int?
+  upload_max_mb    Int?
+  require_2fa      Boolean? @default(false)
+  password_min_len Int?     @default(8)
+  session_exp_min  Int?     @default(120)
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  escola_id  String
+  name       String
+  key_hash   String   @unique
+  active     Boolean  @default(true)
+  last_used  DateTime?
+  created_at DateTime @default(now())
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+}
+
+model InviteToken {
+  id         String   @id @default(cuid())
+  escola_id  String
+  email      String
+  role       Role
+  token_hash String   @unique
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime @default(now())
+
+  escola Escola @relation(fields: [escola_id], references: [id])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  escola_id     String?
+  actor_user_id String?
+  action        String
+  meta          Json?
+  created_at    DateTime @default(now())
+
+  escola Escola? @relation(fields: [escola_id], references: [id])
+  actor  Usuario? @relation("UsuarioAuditLogs", fields: [actor_user_id], references: [id])
+  @@index([escola_id, created_at])
+}
+
+model Job {
+  id         String   @id @default(cuid())
+  escola_id  String?
+  type       String
+  status     String
+  payload    Json
+  result_url String?
+  error      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  escola Escola? @relation(fields: [escola_id], references: [id])
 }

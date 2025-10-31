@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import type { CreateProvaRequest, UpdateProvaRequest } from '@jcode/types';
 import { prisma } from '../../db';
@@ -86,9 +86,12 @@ router.post('/provas/:id/analisar', requireAuth, async (req, res) => {
     prova_id: provaId,
     resumo_scores: { gramatica: 86, coerencia: 90, aderencia: 88 },
     por_questao: [
-      { questao_id: 'q1', issues: ['pontuação'], sugestoes: ['Melhorar clareza do enunciado'] }
+      { questao_id: 'q1', issues: ['pontuaÃ§Ã£o'], sugestoes: ['Melhorar clareza do enunciado'] }
     ],
-    uso: { mostradas: 5, aplicadas: 2, tempo_seg: 18 }
+    uso: { mostradas: 5, aplicadas: 2, tempo_seg: 18 },
+    tokens_in: 1200,
+    tokens_out: 450,
+    cost_cents: 2
   };
   // Persist stub analysis for audit/reporting
   await prisma.analiseIA.create({
@@ -96,7 +99,10 @@ router.post('/provas/:id/analisar', requireAuth, async (req, res) => {
       prova_id: provaId,
       resumo_scores: result.resumo_scores as any,
       por_questao: result.por_questao as any,
-      uso: result.uso as any
+      uso: result.uso as any,
+      tokens_in: result.tokens_in,
+      tokens_out: result.tokens_out,
+      cost_cents: result.cost_cents
     }
   });
   return res.json(result);
@@ -156,6 +162,15 @@ router.post('/provas/:id/preview', requireAuth, (req, res) => {
   return res.json({ url: `https://example.local/preview/${req.params.id}.pdf` });
 });
 
+// Enfileirar renderizaÃ§Ã£o de PDF
+router.post('/provas/:id/render', requireAuth, async (req, res) => {
+  const id = req.params.id;
+  const prova = await prisma.prova.findFirst({ where: { id, escola_id: req.user!.escola_id } });
+  if (!prova) return res.status(404).json({ error: 'not_found' });
+  const job = await prisma.job.create({ data: { escola_id: prova.escola_id, type: 'PDF_RENDER', status: 'pending', payload: { prova_id: id } as any } });
+  return res.status(201).json(job);
+});
+
 router.post('/provas/:id/submit', requireAuth, async (req, res) => {
   const id = req.params.id;
   const prova = await prisma.prova.findFirst({
@@ -187,7 +202,7 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
   if (regras.glossario_obrigatorio) {
     const inlineInvalida = prova.questoes.some((q) => Array.isArray(q.images_inline_ids) && q.images_inline_ids.length > 0);
     if (inlineInvalida) return res.status(400).json({ error: 'glossario_obrigatorio_sem_inline' });
-    // Checar que todas as imagens tem ref_code e são referenciadas por alguma questão (images_refs)
+    // Checar que todas as imagens tem ref_code e sÃ£o referenciadas por alguma questÃ£o (images_refs)
     const refsUsadas = new Set<string>();
     for (const q of prova.questoes) {
       (Array.isArray(q.images_refs) ? (q.images_refs as string[]) : []).forEach((r) => refsUsadas.add(r));
@@ -196,8 +211,24 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
     if (faltandoRef) return res.status(400).json({ error: 'imagem_sem_referencia_glossario' });
   }
 
+  // EscolaPolicy enforcement
+  const policy = await prisma.escolaPolicy.findFirst({ where: { escola_id: prova.escola_id } });
+  if (policy?.imagens_modo === 'glossario') {
+    const inlineInvalida2 = prova.questoes.some((q) => Array.isArray(q.images_inline_ids) && q.images_inline_ids.length > 0);
+    if (inlineInvalida2) return res.status(400).json({ error: 'policy_glossario_obrigatorio' });
+  }
+  if (policy?.aderencia_min || policy?.coerencia_min) {
+    const last = await prisma.analiseIA.findFirst({ where: { prova_id: prova.id }, orderBy: { created_at: 'desc' } });
+    if (!last) return res.status(400).json({ error: 'analise_requerida' });
+    const ader = (last.resumo_scores as any)?.aderencia ?? 100;
+    const coer = (last.resumo_scores as any)?.coerencia ?? 100;
+    if (policy?.aderencia_min && ader < policy.aderencia_min) return res.status(400).json({ error: 'aderencia_abaixo_limiar', min: policy.aderencia_min, valor: ader });
+    if (policy?.coerencia_min && coer < policy.coerencia_min) return res.status(400).json({ error: 'coerencia_abaixo_limiar', min: policy.coerencia_min, valor: coer });
+  }
+
   const updated = await prisma.prova.update({ where: { id }, data: { status: 'SUBMITTED' } });
   return res.json({ id: updated.id, status: updated.status });
 });
 
 export default router;
+

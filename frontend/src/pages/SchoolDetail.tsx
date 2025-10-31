@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Button, Card, Modal } from '@jcode/ui/src';
 import { api } from '../lib/api';
 
-type Escola = { id: string; nome: string; slug?: string | null };
+type Escola = { id: string; nome: string; slug?: string | null; logo_url?: string | null; pdf_capa_url?: string | null; pdf_footer?: string | null };
 type Turma = { id: string; nome_exibicao: string; ano_letivo: number; turno: string };
 type Usuario = { id: string; nome: string; email: string; role: 'coordenacao' | 'professor' };
 type Materia = { id: string; nome: string };
@@ -21,21 +21,58 @@ export default function SchoolDetail() {
   const [busy, setBusy] = useState(false);
   const [turmaForm, setTurmaForm] = useState({ nome_exibicao: '', ano_letivo: new Date().getFullYear(), turno: 'manha' });
   const [coordForm, setCoordForm] = useState({ nome: '', email: '' });
+  const [footer, setFooter] = useState('');
+  const [policy, setPolicy] = useState<any>({});
+  const [keys, setKeys] = useState<any[]>([]);
 
   async function load() {
     const data = await api<{ escola: Escola; turmas: Turma[]; usuarios: Usuario[]; materias: Materia[] }>(`/escolas/${id}`);
     setEscola(data.escola);
     setNome(data.escola.nome);
+    setFooter((data as any).escola.pdf_footer || '');
     setTurmas(data.turmas);
     setUsuarios(data.usuarios);
     setMaterias(data.materias);
   }
 
   useEffect(() => { load(); }, [id]);
+  useEffect(() => { (async () => { if (!id) return; try { const pol = await api<any>(`/escolas/${id}/policy`); setPolicy(pol || {}); const ks = await api<any[]>(`/escolas/${id}/api-keys`); setKeys(ks); } catch {} })(); }, [id]);
 
   async function saveNome() {
     await api(`/escolas/${id}`, { method: 'PUT', body: JSON.stringify({ nome }) });
     await load();
+  }
+
+  async function saveFooter() {
+    await api(`/escolas/${id}`, { method: 'PUT', body: JSON.stringify({ pdf_footer: footer }) });
+    await load();
+  }
+
+  async function upload(type: 'logo'|'capa', file: File) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('escola_id', String(id));
+    fd.append('type', type);
+    await api(`/uploads/escola-asset`, { method: 'POST', body: fd });
+    await load();
+  }
+
+  async function savePolicy() {
+    await api(`/escolas/${id}/policy`, { method: 'PUT', body: JSON.stringify(policy) });
+    alert('Policy salva');
+  }
+
+  async function createKey() {
+    const res = await api<any>(`/escolas/${id}/api-keys`, { method: 'POST', body: JSON.stringify({ name: 'default' }) });
+    alert(`Nova API key: ${res.token}`);
+    const ks = await api<any[]>(`/escolas/${id}/api-keys`);
+    setKeys(ks);
+  }
+
+  async function disableKey(keyId: string) {
+    await api(`/api-keys/${keyId}/disable`, { method: 'PATCH' });
+    const ks = await api<any[]>(`/escolas/${id}/api-keys`);
+    setKeys(ks);
   }
 
   function abrirTurma() {
@@ -83,9 +120,9 @@ export default function SchoolDetail() {
           </div>
         </Card>
 
-        <div className="page-grid-3" style={{ marginTop: 16 }}>
-          <Card>
-            <strong>Turmas</strong>
+      <div className="page-grid-3" style={{ marginTop: 16 }}>
+        <Card>
+          <strong>Turmas</strong>
             <div className="col" style={{ marginTop: 8 }}>
               {turmas.map((t) => (
                 <div key={t.id} className="row" style={{ justifyContent: 'space-between' }}>
@@ -110,9 +147,68 @@ export default function SchoolDetail() {
                 <div key={u.id}>{u.nome} — {u.email}</div>
               ))}
             </div>
-          </Card>
-        </div>
+        </Card>
       </div>
+
+      <div className="page-grid-3" style={{ marginTop: 16 }}>
+        <Card>
+          <strong>Branding</strong>
+          <div className="col" style={{ marginTop: 8, gap: 10 }}>
+            <div className="row" style={{ gap: 12 }}>
+              <div className="col" style={{ flex: 1 }}>
+                <label className="label">Logo</label>
+                {escola?.logo_url && <img src={escola.logo_url} alt="logo" style={{ maxWidth: '100%', maxHeight: 80 }} />}
+                <input type="file" className="input" onChange={(e) => e.target.files && upload('logo', e.target.files[0])} />
+              </div>
+              <div className="col" style={{ flex: 1 }}>
+                <label className="label">Capa do PDF</label>
+                {(escola as any)?.pdf_capa_url && <img src={(escola as any).pdf_capa_url} alt="capa" style={{ maxWidth: '100%', maxHeight: 80 }} />}
+                <input type="file" className="input" onChange={(e) => e.target.files && upload('capa', e.target.files[0])} />
+              </div>
+            </div>
+            <label className="label">Rodapé do PDF</label>
+            <input className="input" value={footer} onChange={(e) => setFooter(e.target.value)} />
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <Button onClick={saveFooter}>Salvar rodapé</Button>
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <strong>Políticas</strong>
+          <div className="col" style={{ gap: 8, marginTop: 8 }}>
+            <label className="label">Aderencia mínima</label>
+            <input className="input" type="number" value={policy.aderencia_min ?? ''} onChange={(e) => setPolicy({ ...policy, aderencia_min: Number(e.target.value) })} />
+            <label className="label">Coerencia mínima</label>
+            <input className="input" type="number" value={policy.coerencia_min ?? ''} onChange={(e) => setPolicy({ ...policy, coerencia_min: Number(e.target.value) })} />
+            <label className="label">Imagens (modo)</label>
+            <select className="select" value={policy.imagens_modo || ''} onChange={(e) => setPolicy({ ...policy, imagens_modo: e.target.value })}>
+              <option value="">padrão</option>
+              <option value="inline">inline</option>
+              <option value="glossario">glossario</option>
+              <option value="auto">auto</option>
+            </select>
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <Button onClick={savePolicy}>Salvar políticas</Button>
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <strong>API Keys</strong>
+          <div className="col" style={{ gap: 8, marginTop: 8 }}>
+            <div className="row" style={{ justifyContent: 'flex-end' }}>
+              <Button onClick={createKey}>Nova API Key</Button>
+            </div>
+            {keys.map((k) => (
+              <div key={k.id} className="row" style={{ justifyContent: 'space-between' }}>
+                <span>{k.name} — {k.active ? 'ativa' : 'inativa'}</span>
+                {k.active && <Button variant="outline" onClick={() => disableKey(k.id)}>Desativar</Button>}
+              </div>
+            ))}
+            {keys.length === 0 && <small className="muted">Sem keys</small>}
+          </div>
+        </Card>
+      </div>
+    </div>
 
       <Modal open={openTurma} title="Nova turma" onClose={() => setOpenTurma(false)}
         footer={<>
@@ -156,4 +252,3 @@ export default function SchoolDetail() {
     </>
   );
 }
-

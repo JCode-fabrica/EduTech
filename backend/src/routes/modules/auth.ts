@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import type { LoginRequest, LoginResponse, MeResponse } from '@jcode/types';
 import { requireAuth } from '../middleware/auth';
 import { prisma } from '../../db';
+import crypto from 'node:crypto';
 
 export const router = Router();
 
@@ -45,6 +46,28 @@ router.post('/auth/change-password', requireAuth, async (req, res) => {
   const hash = await bcrypt.hash(new_password, 10);
   await prisma.usuario.update({ where: { id: user.id }, data: { senha_hash: hash, must_change_password: false } });
   return res.json({ ok: true });
+});
+
+// Accept invite and create/set password
+router.post('/auth/accept-invite', async (req, res) => {
+  const { token, nome, senha } = req.body as { token: string; nome: string; senha: string };
+  if (!token || !nome || !senha) return res.status(400).json({ error: 'missing_fields' });
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const iv = await prisma.inviteToken.findFirst({ where: { token_hash: hash, used_at: null } });
+  if (!iv || iv.expires_at < new Date()) return res.status(400).json({ error: 'invalid_or_expired' });
+  // if user exists, update password; else create
+  const senha_hash = await bcrypt.hash(senha, 10);
+  const existing = await prisma.usuario.findFirst({ where: { email: iv.email } });
+  let user;
+  if (existing) {
+    user = await prisma.usuario.update({ where: { id: existing.id }, data: { senha_hash, must_change_password: false, ativo: true } });
+  } else {
+    user = await prisma.usuario.create({ data: { escola_id: iv.escola_id, nome, email: iv.email, role: iv.role, senha_hash, ativo: true, must_change_password: false } });
+  }
+  await prisma.inviteToken.update({ where: { id: iv.id }, data: { used_at: new Date() } });
+  const payload: any = { id: user.id, nome: user.nome, email: user.email, role: user.role, escola_id: user.escola_id };
+  const jwtToken = jwt.sign(payload, process.env.JWT_SECRET || 'devsecret-change-me', { expiresIn: '2h' });
+  return res.json({ token: jwtToken, user: payload });
 });
 
 export default router;
