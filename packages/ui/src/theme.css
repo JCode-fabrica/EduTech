@@ -111,6 +111,7 @@ a:hover { opacity: 0.9; }
 
 /* Login screen visuals */
 .login-screen { min-height: 100vh; position: relative; background: radial-gradient(1200px 600px at 10% -10%, rgba(56,189,248,0.08), transparent), radial-gradient(1000px 500px at 100% 10%, rgba(216,27,96,0.08), transparent), var(--bg); display: grid; place-items: center; }
+.login-bg { position: absolute; inset: 0; pointer-events: none; }
 .login-bg .blob { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(80px); opacity: .35; }
 .login-bg .blob.a { top: 10%; left: 10%; background: var(--accent); }
 .login-bg .blob.b { bottom: 10%; right: 15%; background: var(--brand); }
