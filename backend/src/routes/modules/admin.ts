@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { prisma } from '../../db';
 import bcrypt from 'bcryptjs';
@@ -79,7 +79,7 @@ router.post('/escolas/:id/usuarios', requireAuth, requireRole(['admin']), async 
   let senha_hash: string | undefined;
   let plain = senha as string | undefined;
   if (!plain || plain.length === 0) {
-    // gerar senha aleatória
+    // gerar senha aleatÃ³ria
     plain = Math.random().toString(36).slice(-10);
   }
   senha_hash = await bcrypt.hash(plain, 10);
@@ -123,28 +123,7 @@ router.put('/escolas/:id/policy', requireAuth, requireRole(['admin']), async (re
   await audit('UPSERT_POLICY', { actorId: req.user!.id, escolaId: req.params.id, meta: req.body });
   return res.json(saved);
 });
-
-// API Keys por escola
-import crypto from 'node:crypto';
-
-router.get('/escolas/:id/api-keys', requireAuth, requireRole(['admin']), async (req, res) => {
-  const keys = await prisma.apiKey.findMany({ where: { escola_id: req.params.id }, orderBy: { created_at: 'desc' } });
-  // Não retornamos o token real; apenas metadados
-  return res.json(keys.map((k) => ({ id: k.id, name: k.name, active: k.active, last_used: k.last_used, created_at: k.created_at })));
-});
-
-router.post('/escolas/:id/api-keys', requireAuth, requireRole(['admin']), async (req, res) => {
-  const name = (req.body?.name as string) || 'key';
-  const token = `eduk_${crypto.randomBytes(24).toString('hex')}`;
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
-  const created = await prisma.apiKey.create({ data: { escola_id: req.params.id, name, key_hash: hash } });
-  await audit('CREATE_API_KEY', { actorId: req.user!.id, escolaId: req.params.id, meta: { id: created.id, name } });
-  return res.status(201).json({ id: created.id, token });
-});
-
-router.patch('/api-keys/:id/disable', requireAuth, requireRole(['admin']), async (req, res) => {
-  const updated = await prisma.apiKey.update({ where: { id: req.params.id }, data: { active: false } });
-  await audit('DISABLE_API_KEY', { actorId: req.user!.id, escolaId: updated.escola_id, meta: { id: updated.id } });
+\r\n  await audit('DISABLE_API_KEY', { actorId: req.user!.id, escolaId: updated.escola_id, meta: { id: updated.id } });
   return res.json({ ok: true });
 });
 
@@ -232,7 +211,7 @@ router.get('/admin/reports', requireAuth, requireRole(['admin']), async (req, re
   const tokens_out = iaAgg.reduce((a, b) => a + (b._sum.tokens_out || 0), 0);
   const cost_cents = iaAgg.reduce((a, b) => a + (b._sum.cost_cents || 0), 0);
 
-  // Série simples por dia
+  // SÃ©rie simples por dia
   const series: Record<string, number> = {};
   const provas = await prisma.prova.findMany({ where: whereBase, select: { created_at: true } });
   for (const p of provas) {
@@ -250,10 +229,7 @@ router.get('/admin/reports', requireAuth, requireRole(['admin']), async (req, re
     porAutor[autor].tokens += (a.tokens_in || 0) + (a.tokens_out || 0);
     porAutor[autor].count += 1;
   }
-  const topProfessores = Object.entries(porAutor)
-    .map(([id, v]) => ({ id, tokens: v.tokens, analises: v.count }))
-    .sort((a, b) => b.tokens - a.tokens)
-    .slice(0, 10);
+  const ids = Object.keys(porAutor);\n  const usuarios = ids.length ? await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, email: true } }) : [];\n  const byId: Record<string, { nome: string | null; email: string }>= {};\n  for (const u of usuarios) byId[u.id] = { nome: u.nome, email: u.email };\n  const topProfessores = Object.entries(porAutor)\n    .map(([id, v]) => ({ id, nome: byId[id]?.nome || null, email: byId[id]?.email || '', tokens: v.tokens, analises: v.count }))\n    .sort((a, b) => b.tokens - a.tokens)\n    .slice(0, 10);
 
   return res.json({ total, aprovadas, revisao, ajustes, tokens_in, tokens_out, cost_cents, provasPorDia, topProfessores });
 });
@@ -299,51 +275,6 @@ router.get('/escolas/:id/export/json', requireAuth, requireRole(['admin']), asyn
   return res.json({ escola, turmas, materias, usuarios, templates, provas, imagens, analises, revisoes, logs });
 });
 
-router.get('/escolas/:id/export/csv', requireAuth, requireRole(['admin']), async (req, res) => {
-  const tipo = (req.query.type as string) || 'usuarios';
-  let rows: string[][] = [];
-  if (tipo === 'usuarios') {
-    const us = await prisma.usuario.findMany({ where: { escola_id: req.params.id } });
-    rows = [['id', 'nome', 'email', 'role', 'ativo']].concat(us.map(u => [u.id, u.nome, u.email, u.role, String(u.ativo)]));
-  } else if (tipo === 'turmas') {
-    const ts = await prisma.turma.findMany({ where: { escola_id: req.params.id } });
-    rows = [['id', 'nome_exibicao', 'ano_letivo', 'turno']].concat(ts.map(t => [t.id, t.nome_exibicao, String(t.ano_letivo), t.turno]));
-  } else if (tipo === 'materias') {
-    const ms = await prisma.materia.findMany({ where: { escola_id: req.params.id } });
-    rows = [['id', 'nome']].concat(ms.map(m => [m.id, m.nome]));
-  } else if (tipo === 'vinculos') {
-    const vs = await prisma.professorTurma.findMany({ where: { turma: { escola_id: req.params.id } }, include: { materias: true, professor: true, turma: true } });
-    rows = [['professor_email', 'turma_id', 'materia_id']];
-    for (const v of vs) {
-      for (const m of v.materias) rows.push([v.professor.email, v.turma_id, m.materia_id]);
-    }
-  }
-  const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\n');
-  res.setHeader('Content-Type', 'text/csv');
-  res.send(csv);
-});
-
-// Import vínculos via CSV (professor_email,turma_id,materia_id)
-router.post('/admin/import/vinculos', requireAuth, requireRole(['admin']), async (req, res) => {
-  const { escola_id, csv } = req.body as { escola_id: string; csv: string };
-  if (!escola_id || !csv) return res.status(400).json({ error: 'missing_fields' });
-  const lines = csv.split(/\r?\n/).filter(Boolean);
-  let createdPT = 0, createdPTM = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (i === 0 && lines[0].toLowerCase().includes('professor')) continue;
-    const parts = lines[i].split(',').map(s => s.replace(/^\s*"?|"?\s*$/g, ''));
-    if (parts.length < 3) continue;
-    const [email, turma_id, materia_id] = parts;
-    const prof = await prisma.usuario.findFirst({ where: { email: email.toLowerCase(), escola_id, role: 'professor' } });
-    if (!prof) continue;
-    let pt = await prisma.professorTurma.findFirst({ where: { professor_id: prof.id, turma_id } });
-    if (!pt) { pt = await prisma.professorTurma.create({ data: { professor_id: prof.id, turma_id } }); createdPT++; }
-    const exists = await prisma.professorTurmaMateria.findFirst({ where: { professor_turma_id: pt.id, materia_id } });
-    if (!exists) { await prisma.professorTurmaMateria.create({ data: { professor_turma_id: pt.id, materia_id } }); createdPTM++; }
-  }
-  await audit('IMPORT_VINCULOS', { actorId: req.user!.id, escolaId: escola_id, meta: { createdPT, createdPTM } });
-  return res.json({ createdPT, createdPTM });
-});
 
 // Upload de branding da escola (logo/capa)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -372,7 +303,7 @@ router.post('/uploads/escola-asset', requireAuth, requireRole(['admin']), upload
   }
 });
 
-// Turmas & matérias - delete/update básicos
+// Turmas & matÃ©rias - delete/update bÃ¡sicos
 router.delete('/turmas/:id', requireAuth, requireRole(['admin']), async (req, res) => {
   await prisma.turma.delete({ where: { id: req.params.id } });
   return res.json({ ok: true });
@@ -394,3 +325,4 @@ router.post('/vinculos/professor-turma-materia', requireAuth, requireRole(['admi
 });
 
 export default router;
+
