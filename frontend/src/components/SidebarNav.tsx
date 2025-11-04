@@ -7,7 +7,6 @@ export default function SidebarNav() {
   const { user } = useAuth();
   const location = useLocation();
 
-  // Estado de expansão por grupo (somente admin)
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const g of adminGroups) initial[g.label] = g.label === 'Escolar';
@@ -26,29 +25,31 @@ export default function SidebarNav() {
       </div>
       {isAdmin ? (
         <nav className="nav" aria-label="Navegação principal">
-          {adminGroups.map((g) => (
-            <div key={g.label}>
-              <button
-                className="btn btn-outline"
-                style={{ width: '100%', justifyContent: 'space-between', display: 'flex' }}
-                onClick={() => setOpen({ ...open, [g.label]: !open[g.label] })}
-                aria-expanded={open[g.label] ? 'true' : 'false'}
-                aria-controls={`group-${g.label}`}
-              >
-                <span>{g.label}</span>
-                <span style={{ opacity: 0.7 }}>{open[g.label] ? '▾' : '▸'}</span>
-              </button>
-              {open[g.label] && (
-                <div id={`group-${g.label}`} className="col" style={{ marginTop: 6, marginBottom: 10 }}>
-                  {g.items.map((i) => (
-                    <NavLink key={i.path} to={i.path} className={({ isActive }) => (isActive ? 'active' : '')}>
-                      {i.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {adminGroups.map((g) => {
+            const isOpen = !!open[g.label];
+            return (
+              <div key={g.label} className="nav-group">
+                <button
+                  className="nav-group-header"
+                  onClick={() => setOpen({ ...open, [g.label]: !isOpen })}
+                  aria-expanded={isOpen ? 'true' : 'false'}
+                  aria-controls={`group-${g.label}`}
+                >
+                  <span>{g.label}</span>
+                  <span className={`chevron ${isOpen ? 'open' : ''}`}>›</span>
+                </button>
+                {isOpen && (
+                  <div id={`group-${g.label}`} className="nav-group-items">
+                    {g.items.map((i) => (
+                      <NavLink key={i.path} to={i.path} className={({ isActive }) => (isActive ? 'active' : '')}>
+                        {i.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       ) : (
         <nav className="nav" aria-label="Navegação principal">

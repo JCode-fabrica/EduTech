@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #F7F7F9;
   --surface: #FFFFFF;
   --text: #1E1E22;
@@ -133,3 +133,13 @@ a:hover { opacity: 0.9; }
 html, body { overflow-x: hidden; }
 .modal * { max-width: 100%; box-sizing: border-box; }
 .textarea { resize: vertical; }
+
+/* Nav groups (sidebar) */
+.nav-group { margin-bottom: 8px; }
+.nav-group-header { width: 100%; background: transparent; border: 1px solid transparent; color: var(--text); display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+.nav-group-header:hover { background: rgba(56,189,248,0.10); border-color: rgba(56,189,248,0.25); }
+[data-theme="dark"] .nav-group-header:hover { background: rgba(56,189,248,0.14); border-color: rgba(56,189,248,0.25); }
+.nav-group-items { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; padding-left: 4px; }
+.nav .nav-group-items a { padding-left: 14px; }
+.chevron { transition: transform .18s ease; display: inline-block; }
+.chevron.open { transform: rotate(90deg); }

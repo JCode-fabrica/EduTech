@@ -19,6 +19,7 @@ export const adminGroups: NavGroup[] = [
     roles: ['admin'],
     items: [
       { label: 'Painel', path: '/admin/overview', roles: ['admin'] },
+      { label: 'Usuários', path: '/admin/usuarios', roles: ['admin'] },
       { label: 'Relatórios', path: '/admin/relatorios', roles: ['admin'] },
       { label: 'Storage e PDFs', path: '/admin/storage-pdfs', roles: ['admin'] }
     ]
