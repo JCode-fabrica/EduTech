@@ -6,6 +6,28 @@ import { uploadToR2 } from '../../services/r2';
 import { audit } from '../../services/audit';
 
 export const router = Router();
+// Optional deps loaders
+function tryRequire(name: string): any | null { try { return require(name); } catch { return null; } }
+
+async function docxToHtml(buffer: Buffer): Promise<string> {
+  const mammoth = tryRequire('mammoth');
+  if (mammoth) {
+    try { const r = await mammoth.convertToHtml({ buffer }); return String(r.value || ''); } catch {}
+  }
+  return '<div class="docx-fallback">DOCX preview indisponível</div>';
+}
+
+async function generateCanonicalViaAI(input: { html: string; text?: string; school: { id: string } }): Promise<any | null> {
+  if (!process.env.OPENAI_API_KEY) return null;
+  const OpenAI = tryRequire('openai');
+  if (!OpenAI) return null;
+  const client = new OpenAI.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const system = 'Você é um conversor DOCX→Template... (resumo do contrato)';
+  const user = `HTML do DOCX:\n${input.html.slice(0, 25000)}\nEscola: ${input.school.id}\nGere o objeto no contrato.`;
+  const resp = await client.chat.completions.create({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: system }, { role: 'user', content: user }], temperature: 0 });
+  const content = resp.choices?.[0]?.message?.content || '';
+  try { return JSON.parse(content); } catch { return null; }
+}
 
 // List templates by school
 router.get('/templates', requireAuth, async (req, res) => {
@@ -79,57 +101,42 @@ router.post('/templates/import-docx', requireAuth, requireRole(['admin']), uploa
     }
 
     const suggested = (req.body?.nome_sugerido as string) || 'Template Prova (DOCX)';
-    const canonical = {
-      nome: suggested,
-      slug: slugify(suggested),
-      metadata: { serie: null, disciplina_padrao: null, observacoes: 'Gerado automaticamente (stub)', gabarito_modelo: null },
-      schema_json: {
-        title: suggested,
-        type: 'object',
-        required: ['header', 'questoes'],
-        properties: {
-          header: {
-            type: 'object',
-            required: ['escola_nome', 'turma', 'disciplina', 'professor', 'data'],
-            properties: {
-              logo_url: { type: 'string' },
-              escola_nome: { type: 'string' },
-              turma: { type: 'string' },
-              disciplina: { type: 'string' },
-              professor: { type: 'string' },
-              data: { type: 'string', format: 'date' },
-              instrucoes: { type: 'string', default: 'Marque apenas uma alternativa.' }
-            }
-          },
-          questoes: {
-            type: 'array', minItems: 1, maxItems: 50,
-            items: {
-              type: 'object', required: ['enunciado','tipo'],
-              properties: {
-                tipo: { type: 'string', enum: ['multiple_choice','discursiva','sem_espaco','vf','relacionar'] },
-                enunciado: { type: 'string' },
-                peso: { type: 'number', default: 1 },
-                alternativas: { type: 'object', properties: { a:{type:'string'}, b:{type:'string'}, c:{type:'string'}, d:{type:'string'}, e:{type:'string'} } },
-                gabarito: { type: 'string', enum: ['a','b','c','d','e'], nullable: true },
-                linhas_resposta: { type: 'integer', minimum: 0, default: 0 },
-                sem_espaco: { type: 'boolean', default: false }
-              }
-            }
+let canonical: any = null;
+canonical = await generateCanonicalViaAI({ html: '<html>'+sourceUrl+'</html>', school: { id: escolaId } });
+if (!canonical) {
+  canonical = {
+    nome: suggested,
+    slug: slugify(suggested),
+    metadata: { serie: null, disciplina_padrao: null, observacoes: 'Gerado automaticamente (stub)', gabarito_modelo: null },
+    schema_json: {
+      title: suggested,
+      type: 'object',
+      required: ['header', 'questoes'],
+      properties: {
+        header: {
+          type: 'object',
+          required: ['escola_nome', 'turma', 'disciplina', 'professor', 'data'],
+          properties: {
+            logo_url: { type: 'string' }, escola_nome: { type: 'string' }, turma: { type: 'string' }, disciplina: { type: 'string' }, professor: { type: 'string' }, data: { type: 'string', format: 'date' }, instrucoes: { type: 'string', default: 'Marque apenas uma alternativa.' }
+          }
+        },
+        questoes: {
+          type: 'array', minItems: 1, maxItems: 50,
+          items: {
+            type: 'object', required: ['enunciado','tipo'],
+            properties: { tipo: { type: 'string', enum: ['multiple_choice','discursiva','sem_espaco','vf','relacionar'] }, enunciado: { type: 'string' }, peso: { type: 'number', default: 1 }, alternativas: { type: 'object', properties: { a:{type:'string'}, b:{type:'string'}, c:{type:'string'}, d:{type:'string'}, e:{type:'string'} } }, gabarito: { type: 'string', enum: ['a','b','c','d','e'], nullable: true }, linhas_resposta: { type: 'integer', minimum: 0, default: 0 }, sem_espaco: { type: 'boolean', default: false } }
           }
         }
-      },
-      layout_hbs: '<div class="sheet"><header><img src="{{header.logo_url}}" alt="logo" style="height:40px;"/> <div>{{header.escola_nome}} - {{header.turma}} - {{header.disciplina}} - {{header.professor}} - {{header.data}}</div></header><main>{{#each questoes as |q idx|}}<section class="questao break-inside-avoid"><strong>{{inc idx}})</strong> {{q.enunciado}} {{#if (eq q.tipo "multiple_choice")}}<ul>{{#each (letters q.alternativas) as |alt|}}<li>({{alt.key}}) {{alt.val}}</li>{{/each}}</ul>{{/if}}{{#if (gt q.linhas_resposta 0)}}<div class="linhas">{{{repeat q.linhas_resposta "<hr/>"}}}</div>{{/if}}</section>{{/each}}</main></div>',
-      css_extra: '.break-inside-avoid{break-inside:avoid;} .sheet{font-size:12pt;}',
-      regras_pag: { avoid_break_inside: ['questao'], max_questions_per_page: 6, min_lines_per_question: 2 },
-      mapping: { strategy: 'docx_html_rules', hints: ['stub'] },
-      source_docx_url: sourceUrl,
-      sample_data: {
-        header: { logo_url: '', escola_nome: 'Minha Escola', turma: '6A', disciplina: 'Matematica', professor: 'Prof Demo', data: new Date().toISOString().slice(0,10), instrucoes: 'Marque apenas uma alternativa.' },
-        questoes: [ { tipo:'multiple_choice', enunciado:'Quanto eh 12 x 8?', peso:1, alternativas: { a:'80', b:'96', c:'108', d:'112' }, gabarito:'b' } ]
       }
-    };
-
-    const created = await prisma.template.create({
+    },
+    layout_hbs: '<div class="sheet"><header><img src="{{header.logo_url}}" alt="logo" style="height:40px;"/> <div>{{header.escola_nome}} - {{header.turma}} - {{header.disciplina}} - {{header.professor}} - {{header.data}}</div></header><main>{{#each questoes as |q idx|}}<section class="questao break-inside-avoid"><strong>{{inc idx}})</strong> {{q.enunciado}} {{#if (eq q.tipo "multiple_choice")}}<ul>{{#each (letters q.alternativas) as |alt|}}<li>({{alt.key}}) {{alt.val}}</li>{{/each}}</ul>{{/if}}{{#if (gt q.linhas_resposta 0)}}<div class="linhas">{{{repeat q.linhas_resposta "<hr/>"}}}</div>{{/if}}</section>{{/each}}</main></div>',
+    css_extra: '.break-inside-avoid{break-inside:avoid;} .sheet{font-size:12pt;}',
+    regras_pag: { avoid_break_inside: ['questao'], max_questions_per_page: 6, min_lines_per_question: 2 },
+    mapping: { strategy: 'docx_html_rules', hints: ['stub'] },
+    source_docx_url: sourceUrl,
+    sample_data: { header: { logo_url: '', escola_nome: 'Minha Escola', turma: '6A', disciplina: 'Matematica', professor: 'Prof Demo', data: new Date().toISOString().slice(0,10), instrucoes: 'Marque apenas uma alternativa.' }, questoes: [ { tipo:'multiple_choice', enunciado:'Quanto eh 12 x 8?', peso:1, alternativas: { a:'80', b:'96', c:'108', d:'112' }, gabarito:'b' } ] }
+  };
+}const created = await prisma.template.create({
       data: ({
       data: {
         escola_id: escolaId,
@@ -199,5 +206,7 @@ router.post('/render/preview', requireAuth, async (req, res) => {
 });
 
 export default router;
+
+
 
 

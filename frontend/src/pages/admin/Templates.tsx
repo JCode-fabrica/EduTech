@@ -9,6 +9,7 @@ export default function AdminTemplates() {
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [openReview, setOpenReview] = useState(false);
+  const [tab, setTab] = useState<"preview" | "structure">("preview");
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [nome, setNome] = useState('');
@@ -94,14 +95,16 @@ export default function AdminTemplates() {
           {draft && <Button onClick={publish}>Publicar</Button>}
         </>}>
         <div className="col" style={{ gap: 10 }}>
-          <div className="surface card" style={{ padding: 8 }}>
-            {draft?.html ? (
-              <iframe title="preview" style={{ width: '100%', height: 420, background: 'white' }} srcDoc={draft.html} />
-            ) : <small className="muted">Gerando preview...</small>}
-          </div>
+          <div className="row" style={{ gap: 8, marginBottom: 8 }}><Button variant="outline" onClick={() => setTab("preview")} disabled={tab==="preview"}>Preview</Button><Button variant="outline" onClick={() => setTab("structure")} disabled={tab==="structure"}>Estrutura</Button></div>
+          {tab==="preview" ? (draft?.html ? (
+              <iframe title="preview" style={{ width: "100%", height: 420, background: "white" }} srcDoc={draft.html} />
+            ) : <small className="muted">Gerando preview...</small>) : (
+              <pre style={{ maxHeight: 420, overflow: "auto" }} >{JSON.stringify(items.find(i=>i.id===draft?.id)||{}, null, 2)}</pre>
+            )}
           <small className="muted">Nesta revisão você poderá ajustar estrutura e mapeamentos em uma próxima etapa.</small>
         </div>
       </Modal>
     </div>
   );
 }
+
