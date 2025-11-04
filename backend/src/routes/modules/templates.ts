@@ -59,21 +59,7 @@ router.put('/templates/:id', requireAuth, requireRole(['admin']), async (req, re
   return res.json(updated);
 });
 
-// Validate basic schema_json presence
-router.post('/templates/:id/validate', requireAuth, requireRole(['admin']), async (req, res) => {
-  const t = await prisma.template.findFirst({ where: { id: req.params.id } });
-  if (!t) return res.status(404).json({ error: 'not_found' });
-  const schema: any = (t as any).schema_json || {};
-  const data = req.body?.data || {};
-  const issues: string[] = [];
-  if (!schema || schema.type !== 'object') issues.push('invalid_schema');
-  if (Array.isArray(schema.required)) {
-    for (const f of schema.required as string[]) {
-      if (data[f] === undefined) issues.push(`missing_${f}`);
-    }
-  }
-  return res.json({ ok: issues.length === 0, issues });
-});
+// Validate basic schema_json presence\r\nrouter.post('/templates/:id/validate', requireAuth, requireRole(['admin']), async (req, res) => {\r\n  const t = await prisma.template.findFirst({ where: { id: req.params.id } });\r\n  if (!t) return res.status(404).json({ error: 'not_found' });\r\n  const schema: any = (t as any).schema_json || {};\r\n  const data = req.body?.data || {};\r\n  const issues: string[] = [];\r\n  const Ajv = tryRequire('ajv');\r\n  if (Ajv) {\r\n    try { const ajv = new Ajv(); const validate = ajv.compile(schema || {}); const valid = validate(data); if (!valid) { for (const e of (validate.errors||[])) issues.push(e.instancePath+':'+(e.message||'invalid')); } } catch { issues.push('schema_compile_error'); }\r\n  } else {\r\n    if (!schema || schema.type !== 'object') issues.push('invalid_schema');\r\n    if (Array.isArray(schema.required)) { for (const f of schema.required as string[]) { if (data[f] === undefined) issues.push(missing_); } }\r\n  }\r\n  return res.json({ ok: issues.length === 0, issues });\r\n});
 
 // Import DOCX -> canonical (IA stub)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -92,17 +78,20 @@ router.post('/templates/import-docx', requireAuth, requireRole(['admin']), uploa
     if (!escolaId) return res.status(400).json({ error: 'missing_escola_id' });
 
     let sourceUrl = (req.body?.arquivo_docx_url as string) || '';
+    let docxHtml: any = null;
     if (!sourceUrl) {
       const file = (req as any).file as Express.Multer.File | undefined;
       if (!file) return res.status(400).json({ error: 'missing_docx' });
       const ct = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       const up = await uploadToR2(file.buffer, ct, { escolaId, provaId: 'template', filename: file.originalname || 'template.docx' });
       sourceUrl = up.url;
+      // Convert DOCX -> HTML for AI and hints
+      try { docxHtml = await (docxToHtml as any)(file.buffer); } catch { docxHtml = '<div></div>'; }
     }
 
     const suggested = (req.body?.nome_sugerido as string) || 'Template Prova (DOCX)';
 let canonical: any = null;
-canonical = await generateCanonicalViaAI({ html: '<html>'+sourceUrl+'</html>', school: { id: escolaId } });
+canonical = await generateCanonicalViaAI({ html: (typeof docxHtml==='string' ? docxHtml : '<html>'+sourceUrl+'</html>'), school: { id: escolaId } });
 if (!canonical) {
   canonical = {
     nome: suggested,
@@ -206,6 +195,53 @@ router.post('/render/preview', requireAuth, async (req, res) => {
 });
 
 export default router;
+
+
+
+
+
+// Render PDF (HTML->PDF) and upload to R2
+router.post('/render/pdf', requireAuth, async (req, res) => {
+  try {
+    const { template_id, layout_hbs, css_extra, data } = req.body || {};
+    let layout = layout_hbs as string | undefined;
+    let css = (css_extra as string) || '';
+    let payload = data as any;
+    if (template_id && !layout) {
+      const t = await prisma.template.findFirst({ where: { id: String(template_id) } });
+      if (!t) return res.status(404).json({ error: 'not_found' });
+      if (t.escola_id !== req.user!.escola_id && req.user!.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
+      layout = (t as any).layout_hbs || '';
+      css = (t as any).css_extra || '';
+      payload = (t as any).sample_data || {};
+    }
+    if (!layout) return res.status(400).json({ error: 'missing_layout' });
+    const Handlebars = require('handlebars');
+    Handlebars.registerHelper('eq', (a: any, b: any) => (a === b));
+    Handlebars.registerHelper('inc', (i: number) => i + 1);
+    Handlebars.registerHelper('gt', (a: number, b: number) => a > b);
+    Handlebars.registerHelper('repeat', (n: number, s: string) => new Array(Math.max(0, n)).fill(s).join(''));
+    Handlebars.registerHelper('letters', (alts: any) => Object.entries(alts || {}).map(([k,v]) => ({ key: k, val: v })));
+    const tpl = Handlebars.compile(String(layout));
+    const body = tpl(payload || {});
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${css}</style></head><body>${body}</body></html>`;
+
+    const puppeteer = tryRequire('puppeteer');
+    if (!puppeteer) return res.status(501).json({ error: 'pdf_not_available' });
+    const browser = await puppeteer.launch({ args: ['--no-sandbox','--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'load' });
+    const pdf = await page.pdf({ format: 'A4', printBackground: true });
+    await browser.close();
+
+    const escolaId = req.user!.escola_id || 'global';
+    const up = await uploadToR2(Buffer.from(pdf), 'application/pdf', { escolaId, provaId: 'template', filename: `template-${Date.now()}.pdf` });
+    return res.status(201).json({ url: up.url });
+  } catch (e: any) {
+    return res.status(500).json({ error: 'pdf_failed', detail: e?.message });
+  }
+});
+
 
 
 
