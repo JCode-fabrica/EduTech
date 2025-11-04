@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button, Card, Modal } from '@edutech/ui';
 import { api } from '../lib/api';
@@ -23,9 +23,7 @@ export default function SchoolDetail() {
   const [coordForm, setCoordForm] = useState({ nome: '', email: '' });
   const [footer, setFooter] = useState('');
   const [policy, setPolicy] = useState<any>({});
-  const [keys, setKeys] = useState<any[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
-  const [newApiToken, setNewApiToken] = useState<string | null>(null);
 
   async function load() {
     const data = await api<{ escola: Escola; turmas: Turma[]; usuarios: Usuario[]; materias: Materia[] }>(`/escolas/${id}`);
@@ -38,7 +36,7 @@ export default function SchoolDetail() {
   }
 
   useEffect(() => { load(); }, [id]);
-  useEffect(() => { (async () => { if (!id) return; try { const pol = await api<any>(`/escolas/${id}/policy`); setPolicy(pol || {}); const ks = await api<any[]>(`/escolas/${id}/api-keys`); setKeys(ks); } catch {} })(); }, [id]);
+  useEffect(() => { (async () => { if (!id) return; try { const pol = await api<any>(`/escolas/${id}/policy`); setPolicy(pol || {}); } catch {} })(); }, [id]);
 
   async function saveNome() {
     await api(`/escolas/${id}`, { method: 'PUT', body: JSON.stringify({ nome }) });
@@ -62,19 +60,6 @@ export default function SchoolDetail() {
   async function savePolicy() {
     await api(`/escolas/${id}/policy`, { method: 'PUT', body: JSON.stringify(policy) });
     setNotice('Política salva');
-  }
-
-  async function createKey() {
-    const res = await api<any>(`/escolas/${id}/api-keys`, { method: 'POST', body: JSON.stringify({ name: 'default' }) });
-    setNewApiToken(res.token);
-    const ks = await api<any[]>(`/escolas/${id}/api-keys`);
-    setKeys(ks);
-  }
-
-  async function disableKey(keyId: string) {
-    await api(`/api-keys/${keyId}/disable`, { method: 'PATCH' });
-    const ks = await api<any[]>(`/escolas/${id}/api-keys`);
-    setKeys(ks);
   }
 
   function abrirTurma() {
@@ -118,70 +103,31 @@ export default function SchoolDetail() {
             <input className="input" value={nome} onChange={(e) => setNome(e.target.value)} style={{ maxWidth: 420 }} />
             <Button onClick={saveNome}>Salvar</Button>
             <Button variant="secondary" onClick={abrirTurma}>Nova turma</Button>
-            <Button variant="outline" onClick={abrirCoord}>Novo coordenador</Button>
-            {tempPass && <small className="muted">Senha temporaria: <strong>{tempPass}</strong></small>}
           </div>
-        </Card>
-
-      <div className="page-grid-3" style={{ marginTop: 16 }}>
-        <Card>
-          <strong>Turmas</strong>
-            <div className="col" style={{ marginTop: 8 }}>
-              {turmas.map((t) => (
-                <div key={t.id} className="row" style={{ justifyContent: 'space-between' }}>
-                  <span>{t.nome_exibicao}</span>
-                  <span className="muted">{t.ano_letivo} • {t.turno}</span>
-                </div>
-              ))}
+          <div className="row" style={{ gap: 12, marginTop: 10 }}>
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Logo</label>
+              {escola.logo_url && <img src={escola.logo_url} alt="logo" style={{ maxWidth: '100%', maxHeight: 80 }} />}
+              <input type="file" className="input" onChange={(e) => e.target.files && upload('logo', e.target.files[0])} />
             </div>
-          </Card>
-          <Card>
-            <strong>Coordenadores</strong>
-            <div className="col" style={{ marginTop: 8 }}>
-              {usuarios.filter((u) => u.role === 'coordenacao').map((u) => (
-                <div key={u.id}>{u.nome} — {u.email}</div>
-              ))}
+            <div className="col" style={{ flex: 1 }}>
+              <label className="label">Capa do PDF</label>
+              {escola.pdf_capa_url && <img src={escola.pdf_capa_url} alt="capa" style={{ maxWidth: '100%', maxHeight: 80 }} />}
+              <input type="file" className="input" onChange={(e) => e.target.files && upload('capa', e.target.files[0])} />
             </div>
-          </Card>
-          <Card>
-            <strong>Professores</strong>
-            <div className="col" style={{ marginTop: 8 }}>
-              {usuarios.filter((u) => u.role === 'professor').map((u) => (
-                <div key={u.id}>{u.nome} — {u.email}</div>
-              ))}
-            </div>
-        </Card>
-      </div>
-
-      <div className="page-grid-3" style={{ marginTop: 16 }}>
-        <Card>
-          <strong>Branding</strong>
-          <div className="col" style={{ marginTop: 8, gap: 10 }}>
-            <div className="row" style={{ gap: 12 }}>
-              <div className="col" style={{ flex: 1 }}>
-                <label className="label">Logo</label>
-                {escola?.logo_url && <img src={escola.logo_url} alt="logo" style={{ maxWidth: '100%', maxHeight: 80 }} />}
-                <input type="file" className="input" onChange={(e) => e.target.files && upload('logo', e.target.files[0])} />
-              </div>
-              <div className="col" style={{ flex: 1 }}>
-                <label className="label">Capa do PDF</label>
-                {(escola as any)?.pdf_capa_url && <img src={(escola as any).pdf_capa_url} alt="capa" style={{ maxWidth: '100%', maxHeight: 80 }} />}
-                <input type="file" className="input" onChange={(e) => e.target.files && upload('capa', e.target.files[0])} />
-              </div>
-            </div>
-            <label className="label">Rodapé do PDF</label>
-            <input className="input" value={footer} onChange={(e) => setFooter(e.target.value)} />
-            <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <Button onClick={saveFooter}>Salvar rodapé</Button>
-            </div>
+          </div>
+          <label className="label">Rodapé do PDF</label>
+          <input className="input" value={footer} onChange={(e) => setFooter(e.target.value)} />
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            <Button onClick={saveFooter}>Salvar rodapé</Button>
           </div>
         </Card>
         <Card>
           <strong>Políticas</strong>
           <div className="col" style={{ gap: 8, marginTop: 8 }}>
-            <label className="label">Aderencia mínima</label>
+            <label className="label">Aderência mínima</label>
             <input className="input" type="number" value={policy.aderencia_min ?? ''} onChange={(e) => setPolicy({ ...policy, aderencia_min: Number(e.target.value) })} />
-            <label className="label">Coerencia mínima</label>
+            <label className="label">Coerência mínima</label>
             <input className="input" type="number" value={policy.coerencia_min ?? ''} onChange={(e) => setPolicy({ ...policy, coerencia_min: Number(e.target.value) })} />
             <label className="label">Imagens (modo)</label>
             <select className="select" value={policy.imagens_modo || ''} onChange={(e) => setPolicy({ ...policy, imagens_modo: e.target.value })}>
@@ -195,23 +141,7 @@ export default function SchoolDetail() {
             </div>
           </div>
         </Card>
-        <Card>
-          <strong>API Keys</strong>
-          <div className="col" style={{ gap: 8, marginTop: 8 }}>
-            <div className="row" style={{ justifyContent: 'flex-end' }}>
-              <Button onClick={createKey}>Nova API Key</Button>
-            </div>
-            {keys.map((k) => (
-              <div key={k.id} className="row" style={{ justifyContent: 'space-between' }}>
-                <span>{k.name} — {k.active ? 'ativa' : 'inativa'}</span>
-                {k.active && <Button variant="outline" onClick={() => disableKey(k.id)}>Desativar</Button>}
-              </div>
-            ))}
-            {keys.length === 0 && <small className="muted">Sem keys</small>}
-          </div>
-        </Card>
       </div>
-    </div>
 
       <Modal open={openTurma} title="Nova turma" onClose={() => setOpenTurma(false)}
         footer={<>
@@ -249,21 +179,21 @@ export default function SchoolDetail() {
           <input className="input" value={coordForm.nome} onChange={(e) => setCoordForm({ ...coordForm, nome: e.target.value })} />
           <label className="label">Email</label>
           <input className="input" value={coordForm.email} onChange={(e) => setCoordForm({ ...coordForm, email: e.target.value })} />
-          <small className="muted">Uma senha temporaria sera gerada e mostrada apos criar. No primeiro acesso sera exigida a troca.</small>
+          <small className="muted">Uma senha temporária será gerada e mostrada após criar. No primeiro acesso será exigida a troca.</small>
         </div>
       </Modal>
 
-      <Modal open={!!newApiToken} title="Nova API Key" onClose={() => setNewApiToken(null)}
-        footer={<>
-          <Button onClick={() => setNewApiToken(null)}>Fechar</Button>
-        </>}>
-        <div className="col" style={{ gap: 10 }}>
-          <small className="muted">Copie e guarde sua chave com segurança. Ela será mostrada apenas uma vez.</small>
-          <div className="surface card" style={{ padding: 10, userSelect: 'all' }}>
-            <code>{newApiToken}</code>
+      {tempPass && (
+        <Modal open={true} title="Senha temporária" onClose={() => setTempPass(null)}
+          footer={<Button onClick={() => setTempPass(null)}>Fechar</Button>}>
+          <div className="col" style={{ gap: 8 }}>
+            <small className="muted">Use esta senha no primeiro acesso do coordenador:</small>
+            <div className="surface card" style={{ padding: 10, userSelect: 'all' }}>
+              <code>{tempPass}</code>
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
     </>
   );
 }
