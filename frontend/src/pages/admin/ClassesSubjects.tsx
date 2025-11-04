@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Card, Button, Modal } from '@edutech/ui';
 import { api } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
@@ -11,9 +11,6 @@ export default function ClassesSubjects() {
   const [openM, setOpenM] = useState(false);
   const [tForm, setTForm] = useState({ nome_exibicao: '', ano_letivo: new Date().getFullYear(), turno: 'manha' });
   const [mForm, setMForm] = useState({ nome: '' });
-  const [openCSV, setOpenCSV] = useState(false);
-  const [csv, setCsv] = useState('professor_email,turma_id,materia_id\n');
-  const [csvNotice, setCsvNotice] = useState<string | null>(null);
   const load = async () => { if (!schoolId) return; const r = await api<any>(`/escolas/${schoolId}`); setData(r); };
   useEffect(() => { load(); }, [schoolId]);
   const createT = async () => { if (!schoolId) return; await api(`/escolas/${schoolId}/turmas`, { method: 'POST', body: JSON.stringify(tForm) }); setOpenT(false); await load(); };
@@ -27,7 +24,6 @@ export default function ClassesSubjects() {
         <div className="row">
           <Button variant="secondary" onClick={() => setOpenT(true)}>Nova turma</Button>
           <Button onClick={() => setOpenM(true)}>Nova matéria</Button>
-          <Button variant="outline" onClick={() => setOpenCSV(true)}>Importar vínculos (CSV)</Button>
         </div>
       </div>
       <SchoolPicker />
@@ -37,7 +33,7 @@ export default function ClassesSubjects() {
           <div className="col" style={{ marginTop: 8 }}>
             {data?.turmas?.map((t: any) => (
               <div key={t.id} className="row" style={{ justifyContent: 'space-between' }}>
-                <span>{t.nome_exibicao} · {t.ano_letivo} · {t.turno}</span>
+                <span>{t.nome_exibicao} • {t.ano_letivo} • {t.turno}</span>
                 <Button variant="outline" onClick={() => delT(t.id)}>Excluir</Button>
               </div>
             ))}
@@ -57,8 +53,8 @@ export default function ClassesSubjects() {
           </div>
         </Card>
         <Card>
-          <strong>Vínculos (em massa)</strong>
-          <p>Importe CSV para criar vínculos Professor↔Turma↔Matéria.</p>
+          <strong>Dicas</strong>
+          <p>Gerencie turmas e matérias por escola. Vínculos professor-turma-matéria podem ser feitos pela área de usuários.</p>
         </Card>
       </div>
 
@@ -90,18 +86,6 @@ export default function ClassesSubjects() {
         <div className="col" style={{ gap: 10 }}>
           <label className="label">Nome</label>
           <input className="input" value={mForm.nome} onChange={(e) => setMForm({ ...mForm, nome: e.target.value })} />
-        </div>
-      </Modal>
-
-      <Modal open={openCSV} title="Importar vínculos (CSV)" onClose={() => setOpenCSV(false)}
-        footer={<>
-          <Button variant="outline" onClick={() => setOpenCSV(false)}>Cancelar</Button>
-          <Button onClick={async () => { if (!schoolId) return; await api('/admin/import/vinculos', { method: 'POST', body: JSON.stringify({ escola_id: schoolId, csv }) }); setCsvNotice('Importado com sucesso'); setOpenCSV(false); await load(); }}>Importar</Button>
-        </>}>
-        <div className="col" style={{ gap: 8 }}>
-          {csvNotice && <small style={{ color: 'var(--success)' }}>{csvNotice}</small>}
-          <small className="muted">Formato: professor_email,turma_id,materia_id (com cabeçalho)</small>
-          <textarea className="textarea" rows={8} value={csv} onChange={(e) => setCsv(e.target.value)} />
         </div>
       </Modal>
     </div>
