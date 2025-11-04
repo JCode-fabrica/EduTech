@@ -5,6 +5,7 @@ import SidebarNav from './components/SidebarNav';
 import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/Login';
 import ChangePasswordPage from './pages/ChangePassword';
+import ProfessorPage from './pages/Professor';
 import AdminDashboard from './pages/AdminDashboard';
 import SchoolDetail from './pages/SchoolDetail';
 import AdminOverview from './pages/admin/Overview';
@@ -17,66 +18,12 @@ import StoragePDF from './pages/admin/StoragePDF';
 import Observability from './pages/admin/Observability';
 import { useAuth } from './auth/AuthContext';
 
-function ProfessorPage() {
-  return (
-    <div className="container">
-      <div className="status-bar">
-        <span className="muted">Status: DRAFT</span>
-        <div className="row">
-          <Button variant="outline">Salvar</Button>
-          <Button variant="secondary">PrÃ©-visualizar</Button>
-          <Button>Enviar</Button>
-        </div>
-      </div>
-      <div className="page-grid-3">
-        <Card>
-          <strong>Metadados</strong>
-          <div className="col" style={{ marginTop: 8 }}>
-            <label className="label" htmlFor="titulo">TÃ­tulo interno</label>
-            <input id="titulo" className="input" />
-
-            <label className="label" htmlFor="turma">Turma</label>
-            <input id="turma" className="input" placeholder="Buscar turma..." />
-
-            <label className="label" htmlFor="materia">MatÃ©ria</label>
-            <select id="materia" className="select">
-              <option>Selecionar</option>
-            </select>
-
-            <label className="label" htmlFor="template">Template</label>
-            <select id="template" className="select">
-              <option>Objetiva Simples</option>
-              <option>Mista Bimestral</option>
-              <option>Simulado A/B</option>
-            </select>
-          </div>
-        </Card>
-        <Card>
-          <strong>QuestÃµes</strong>
-          <div className="col" style={{ marginTop: 8 }}>
-            <div className="surface card" style={{ padding: 8 }}>
-              <em>Lista de questÃµes (drag & drop) â€” stub</em>
-            </div>
-          </div>
-        </Card>
-        <Card>
-          <strong>Painel IA</strong>
-          <div className="col" style={{ marginTop: 8 }}>
-            <Button variant="secondary">Analisar</Button>
-            <small className="muted">Badges e sugestÃµes por questÃ£o â€” stub</small>
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
 function CoordenacaoPage() {
   return (
     <div className="col">
       <Card>
-        <strong>RevisÃ£o</strong>
-        <p>Abas: AnÃ¡lise IA, Conformidade Template, Imagens, ComentÃ¡rios â€” stub</p>
+        <strong>Revisão</strong>
+        <p>Abas: Análise IA, Conformidade Template, Imagens, Comentários — stub</p>
         <div className="row">
           <Button variant="outline">Solicitar ajustes</Button>
           <Button>Aprovar</Button>
@@ -104,9 +51,9 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
         <strong>EduTech</strong>
       </div>
       <div className="row">
-        {user && <span className="muted">{user.nome} Â· {user.role}</span>}
+        {user && <span className="muted">{user.nome} — {user.role}</span>}
         <Button variant="outline" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Alternar tema">
-          {theme === 'light' ? 'ðŸŒ™' : 'â˜€ï¸'}
+          {theme === 'light' ? '🌙' : '☀️'}
         </Button>
         {user ? (
           <Button variant="outline" onClick={logout}>Sair</Button>
@@ -133,12 +80,14 @@ export default function App({ theme, setTheme }: { theme: 'light' | 'dark'; setT
           <Route path="/admin/escolas/:id" element={<SchoolDetail />} />
           <Route path="/admin/usuarios" element={<AdminUsers />} />
           <Route path="/admin/turmas-materias" element={<ClassesSubjects />} />
-          <Route path="/admin/templates" element={<AdminTemplates />} />          <Route path="/admin/relatorios" element={<AdminReports />} />
-          <Route path="/admin/logs" element={<AdminLogs />} />          <Route path="/admin/storage-pdfs" element={<StoragePDF />} />          <Route path="/admin/observabilidade" element={<Observability />} />
+          <Route path="/admin/templates" element={<AdminTemplates />} />
+          <Route path="/admin/relatorios" element={<AdminReports />} />
+          <Route path="/admin/logs" element={<AdminLogs />} />
+          <Route path="/admin/storage-pdfs" element={<StoragePDF />} />
+          <Route path="/admin/observabilidade" element={<Observability />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>
   );
 }
-
