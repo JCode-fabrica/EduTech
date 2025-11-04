@@ -6,6 +6,7 @@ import { audit } from '../../services/audit';
 import multer from 'multer';
 import { uploadToR2 } from '../../services/r2';
 import { lookup as mimeLookup } from 'mime-types';
+import { randomBytes, createHash } from 'node:crypto';
 
 export const router = Router();
 
@@ -123,9 +124,6 @@ router.put('/escolas/:id/policy', requireAuth, requireRole(['admin']), async (re
   await audit('UPSERT_POLICY', { actorId: req.user!.id, escolaId: req.params.id, meta: req.body });
   return res.json(saved);
 });
-\r\n  await audit('DISABLE_API_KEY', { actorId: req.user!.id, escolaId: updated.escola_id, meta: { id: updated.id } });
-  return res.json({ ok: true });
-});
 
 // Users list (admin-wide or filtered by escola)
 router.get('/admin/users', requireAuth, requireRole(['admin']), async (req, res) => {
@@ -147,8 +145,8 @@ router.patch('/admin/users/:id', requireAuth, requireRole(['admin']), async (req
 router.post('/admin/users/invite', requireAuth, requireRole(['admin']), async (req, res) => {
   const { escola_id, email, role, expires_minutes = 60 } = req.body || {};
   if (!escola_id || !email || !role) return res.status(400).json({ error: 'missing_fields' });
-  const token = `ivk_${crypto.randomBytes(24).toString('hex')}`;
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const token = `ivk_${randomBytes(24).toString('hex')}`;
+  const hash = createHash('sha256').update(token).digest('hex');
   const expires = new Date(Date.now() + Number(expires_minutes) * 60 * 1000);
   const iv = await prisma.inviteToken.create({ data: { escola_id, email: email.toLowerCase(), role, token_hash: hash, expires_at: expires } });
   await audit('CREATE_INVITE', { actorId: req.user!.id, escolaId: escola_id, meta: { email, role } });
@@ -229,7 +227,14 @@ router.get('/admin/reports', requireAuth, requireRole(['admin']), async (req, re
     porAutor[autor].tokens += (a.tokens_in || 0) + (a.tokens_out || 0);
     porAutor[autor].count += 1;
   }
-  const ids = Object.keys(porAutor);\n  const usuarios = ids.length ? await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, email: true } }) : [];\n  const byId: Record<string, { nome: string | null; email: string }>= {};\n  for (const u of usuarios) byId[u.id] = { nome: u.nome, email: u.email };\n  const topProfessores = Object.entries(porAutor)\n    .map(([id, v]) => ({ id, nome: byId[id]?.nome || null, email: byId[id]?.email || '', tokens: v.tokens, analises: v.count }))\n    .sort((a, b) => b.tokens - a.tokens)\n    .slice(0, 10);
+  const ids = Object.keys(porAutor);
+  const usuarios = ids.length ? await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { id: true, nome: true, email: true } }) : [];
+  const byId: Record<string, { nome: string | null; email: string }>= {};
+  for (const u of usuarios) byId[u.id] = { nome: u.nome, email: u.email };
+  const topProfessores = Object.entries(porAutor)
+    .map(([id, v]) => ({ id, nome: byId[id]?.nome || null, email: byId[id]?.email || '', tokens: v.tokens, analises: v.count }))
+    .sort((a, b) => b.tokens - a.tokens)
+    .slice(0, 10);
 
   return res.json({ total, aprovadas, revisao, ajustes, tokens_in, tokens_out, cost_cents, provasPorDia, topProfessores });
 });
@@ -325,4 +330,7 @@ router.post('/vinculos/professor-turma-materia', requireAuth, requireRole(['admi
 });
 
 export default router;
+
+
+
 

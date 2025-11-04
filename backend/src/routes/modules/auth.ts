@@ -1,9 +1,9 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../middleware/auth';
 import { prisma } from '../../db';
-import crypto from 'node:crypto';
+import { createHash } from 'node:crypto';
 
 export const router = Router();
 
@@ -51,7 +51,7 @@ router.post('/auth/change-password', requireAuth, async (req, res) => {
 router.post('/auth/accept-invite', async (req, res) => {
   const { token, nome, senha } = req.body as { token: string; nome: string; senha: string };
   if (!token || !nome || !senha) return res.status(400).json({ error: 'missing_fields' });
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const hash = createHash('sha256').update(token).digest('hex');
   const iv = await prisma.inviteToken.findFirst({ where: { token_hash: hash, used_at: null } });
   if (!iv || iv.expires_at < new Date()) return res.status(400).json({ error: 'invalid_or_expired' });
   // if user exists, update password; else create
@@ -70,3 +70,4 @@ router.post('/auth/accept-invite', async (req, res) => {
 });
 
 export default router;
+
