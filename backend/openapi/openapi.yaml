@@ -1,4 +1,4 @@
-openapi: 3.1.0
+﻿openapi: 3.1.0
 info:
   title: EduTech API
   version: 0.1.0
@@ -27,7 +27,7 @@ paths:
         '200': { description: JWT token }
   /me:
     get:
-      summary: Perfil do usuário atual
+      summary: Perfil do usuÃ¡rio atual
       responses:
         '200': { description: Perfil }
   /escolas:
@@ -47,7 +47,7 @@ paths:
         '201': { description: Criado }
   /escolas/{id}/materias:
     post:
-      summary: Criar matéria (admin)
+      summary: Criar matÃ©ria (admin)
       parameters:
         - in: path
           name: id
@@ -57,7 +57,7 @@ paths:
         '201': { description: Criado }
   /escolas/{id}/usuarios:
     post:
-      summary: Criar usuário (admin)
+      summary: Criar usuÃ¡rio (admin)
       parameters:
         - in: path
           name: id
@@ -72,7 +72,7 @@ paths:
         '201': { description: Criado }
   /vinculos/professor-turma-materia:
     post:
-      summary: Vincular professor-turma-matéria (admin)
+      summary: Vincular professor-turma-matÃ©ria (admin)
       responses:
         '201': { description: Criado }
   /minhas-turmas:
@@ -82,7 +82,7 @@ paths:
         '200': { description: OK }
   /minhas-materias:
     get:
-      summary: Lista matérias do professor (por turma)
+      summary: Lista matÃ©rias do professor (por turma)
       parameters:
         - in: query
           name: turma_id
@@ -121,7 +121,7 @@ paths:
         '200': { description: OK }
   /provas/{id}/analisar:
     post:
-      summary: Executar análise IA
+      summary: Executar anÃ¡lise IA
       responses:
         '200': { description: OK }
   /uploads/imagem:
@@ -149,30 +149,30 @@ paths:
       responses:
         '201': { description: Criado }
       description: |
-        Aceita imagens (jpeg, png, webp, svg) e PDF. `prova_id` é obrigatório para gerar `ref_code` e vincular a imagem.
+        Aceita imagens (jpeg, png, webp, svg) e PDF. `prova_id` Ã© obrigatÃ³rio para gerar `ref_code` e vincular a imagem.
   /provas/{id}/preview:
     post:
-      summary: Gerar pré-visualização PDF
+      summary: Gerar prÃ©-visualizaÃ§Ã£o PDF
       responses:
         '200': { description: OK }
   /provas/{id}/submit:
     post:
-      summary: Enviar prova à coordenação
+      summary: Enviar prova Ã  coordenaÃ§Ã£o
       responses:
         '200': { description: OK }
   /provas/{id}/approve:
     post:
-      summary: Aprovar prova (coordenação)
+      summary: Aprovar prova (coordenaÃ§Ã£o)
       responses:
         '200': { description: OK }
   /provas/{id}/request-changes:
     post:
-      summary: Solicitar ajustes (coordenação)
+      summary: Solicitar ajustes (coordenaÃ§Ã£o)
       responses:
         '200': { description: OK }
   /provas/{id}/relatorio:
     get:
-      summary: Relatório (coordenacao)
+      summary: RelatÃ³rio (coordenacao)
       responses:
         '200': { description: OK }
 components:
@@ -183,3 +183,64 @@ components:
       bearerFormat: JWT
 security:
   - bearerAuth: []
+
+  /templates:
+    get:
+      summary: Listar templates por escola
+      parameters:
+        - in: query
+          name: escola_id
+          required: false
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /templates/import-docx:
+    post:
+      summary: Importar template via DOCX (IA)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                escola_id: { type: string }
+                nome_sugerido: { type: string }
+                docx:
+                  type: string
+                  format: binary
+      responses:
+        "201": { description: Criado (rascunho) }
+  /templates/{id}/publish:
+    post:
+      summary: Publicar template
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /render/preview:
+    post:
+      summary: Render de preview (HTML) a partir de layout+dados ou template_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                template_id: { type: string }
+                layout_hbs: { type: string }
+                css_extra: { type: string }
+                data: { type: object }
+      responses:
+        "200": { description: HTML gerado }
+  /render/pdf:
+    post:
+      summary: Render PDF (job)
+      requestBody:
+        required: false
+      responses:
+        "201": { description: Job criado }
