@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Card, Button, Modal } from '@edutech/ui';
 import { api } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
@@ -9,11 +9,15 @@ export default function AdminTemplates() {
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [openReview, setOpenReview] = useState(false);
-  const [tab, setTab] = useState<"preview" | "structure">("preview");
+  const [tab, setTab] = useState<'preview'|'structure'>('preview');
   const [busy, setBusy] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [nome, setNome] = useState('');
   const [draft, setDraft] = useState<{ id: string; html?: string } | null>(null);
+  const [detail, setDetail] = useState<any>(null);
+  const [schemaText, setSchemaText] = useState('');
+  const [mappingText, setMappingText] = useState('');
+
   const load = async () => { if (!schoolId) return; const t = await api<any[]>(`/templates?escola_id=${schoolId}`); setItems(t); };
   useEffect(() => { load(); }, [schoolId]);
 
@@ -33,6 +37,7 @@ export default function AdminTemplates() {
       // Preview HTML
       const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: data.template_id }) });
       setDraft({ id: data.template_id, html: prev.html });
+      try { const d = await api<any>(`/templates/${data.template_id}`); setDetail(d); setSchemaText(JSON.stringify(d.schema_json||{}, null, 2)); setMappingText(JSON.stringify(d.mapping||{}, null, 2)); } catch {}
       setOpen(false);
       setOpenReview(true);
     } catch (e) {
@@ -43,11 +48,25 @@ export default function AdminTemplates() {
     }
   };
 
+  const preview = async (id: string) => {
+    const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: id }) });
+    setDraft({ id, html: prev.html });
+    try { const d = await api<any>(`/templates/${id}`); setDetail(d); setSchemaText(JSON.stringify(d.schema_json||{}, null, 2)); setMappingText(JSON.stringify(d.mapping||{}, null, 2)); } catch {}
+    setOpenReview(true);
+  };
+
   const publish = async () => {
     if (!draft) return;
+    // optional save structure before publish
+    try { await api(`/templates/${draft.id}`, { method: 'PUT', body: JSON.stringify({ schema_json: JSON.parse(schemaText||'{}'), mapping: JSON.parse(mappingText||'{}') }) }); } catch {}
     await api(`/templates/${draft.id}/publish`, { method: 'POST' });
     setOpenReview(false);
     await load();
+  };
+
+  const saveStructure = async () => {
+    if (!draft) return;
+    try { await api(`/templates/${draft.id}`, { method: 'PUT', body: JSON.stringify({ schema_json: JSON.parse(schemaText||'{}'), mapping: JSON.parse(mappingText||'{}') }) }); alert('Estrutura salva'); } catch { alert('Falha ao salvar'); }
   };
 
   return (
@@ -63,9 +82,9 @@ export default function AdminTemplates() {
         <div className="col" style={{ gap: 8 }}>
           {items.map((t) => (
             <div key={t.id} className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <span><strong>{t.nome}</strong> {t.ativo ? '' : <em className="muted">(rascunho)</em>}</span>
+              <span><strong>{t.nome}</strong> {t.ativo ? '' : <em className="muted">(rascunho)</em>} • v{t.versao}</span>
               <div className="row">
-                <Button variant="outline" onClick={async () => { const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: t.id }) }); setDraft({ id: t.id, html: prev.html }); setOpenReview(true); }}>Preview</Button>
+                <Button variant="outline" onClick={() => preview(t.id)}>Preview</Button>
                 {!t.ativo && <Button onClick={() => api(`/templates/${t.id}/publish`, { method: 'POST' }).then(load)}>Publicar</Button>}
               </div>
             </div>
@@ -95,16 +114,28 @@ export default function AdminTemplates() {
           {draft && <Button onClick={publish}>Publicar</Button>}
         </>}>
         <div className="col" style={{ gap: 10 }}>
-          <div className="row" style={{ gap: 8, marginBottom: 8 }}><Button variant="outline" onClick={() => setTab("preview")} disabled={tab==="preview"}>Preview</Button><Button variant="outline" onClick={() => setTab("structure")} disabled={tab==="structure"}>Estrutura</Button></div>
-          {tab==="preview" ? (draft?.html ? (
-              <iframe title="preview" style={{ width: "100%", height: 420, background: "white" }} srcDoc={draft.html} />
-            ) : <small className="muted">Gerando preview...</small>) : (
-              <pre style={{ maxHeight: 420, overflow: "auto" }} >{JSON.stringify(items.find(i=>i.id===draft?.id)||{}, null, 2)}</pre>
-            )}
-          <small className="muted">Nesta revisão você poderá ajustar estrutura e mapeamentos em uma próxima etapa.</small>
+          <div className="row" style={{ gap: 8, marginBottom: 8 }}>
+            <Button variant="outline" onClick={() => setTab('preview')} disabled={tab==='preview'}>Preview</Button>
+            <Button variant="outline" onClick={() => setTab('structure')} disabled={tab==='structure'}>Estrutura</Button>
+          </div>
+          {tab==='preview' ? (
+            draft?.html ? (
+              <iframe title="preview" style={{ width: '100%', height: 420, background: 'white' }} srcDoc={draft.html} />
+            ) : <small className="muted">Gerando preview...</small>
+          ) : (
+            <div className="col" style={{ gap: 8 }}>
+              <label className="label">schema_json</label>
+              <textarea className="textarea" rows={10} value={schemaText} onChange={e=>setSchemaText(e.target.value)} />
+              <label className="label">mapping</label>
+              <textarea className="textarea" rows={10} value={mappingText} onChange={e=>setMappingText(e.target.value)} />
+              <div className="row" style={{ justifyContent: 'flex-end' }}>
+                <Button variant="outline" onClick={saveStructure}>Salvar estrutura</Button>
+              </div>
+            </div>
+          )}
+          <small className="muted">Revise o layout e a estrutura detectada antes de publicar.</small>
         </div>
       </Modal>
     </div>
   );
 }
-
