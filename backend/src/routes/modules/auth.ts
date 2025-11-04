@@ -11,7 +11,23 @@ router.post('/auth/login', async (req, res) => {
   const { email, senha } = req.body as any;
   if (!email || !senha) return res.status(400).json({ error: 'invalid_credentials' });
 
-  const user = await prisma.usuario.findFirst({ where: { email: email.toLowerCase(), ativo: true } });
+  let user = await prisma.usuario.findFirst({ where: { email: String(email).toLowerCase(), ativo: true } });
+
+  // Dev-only fallback: auto-provision admin if missing and credentials match env
+  if (!user && (process.env.NODE_ENV !== 'production')) {
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@demo.com').toLowerCase();
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    if (String(email).toLowerCase() === adminEmail && String(senha) === adminPass) {
+      const hash = await bcrypt.hash(adminPass, 10);
+      const existingAdm = await prisma.usuario.findFirst({ where: { email: adminEmail } });
+      if (existingAdm) {
+        user = await prisma.usuario.update({ where: { id: existingAdm.id }, data: { role: 'admin', ativo: true, senha_hash: hash, escola_id: null, must_change_password: false } });
+      } else {
+        user = await prisma.usuario.create({ data: { nome: 'Admin', email: adminEmail, role: 'admin', senha_hash: hash, ativo: true, escola_id: null, must_change_password: false } });
+      }
+    }
+  }
+
   if (!user) return res.status(401).json({ error: 'invalid_credentials' });
   const ok = await bcrypt.compare(String(senha), user.senha_hash || '');
   if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
@@ -70,4 +86,5 @@ router.post('/auth/accept-invite', async (req, res) => {
 });
 
 export default router;
+
 
