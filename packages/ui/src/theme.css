@@ -143,3 +143,5 @@ html, body { overflow-x: hidden; }
 .nav .nav-group-items a { padding-left: 14px; }
 .chevron { transition: transform .18s ease; display: inline-block; }
 .chevron.open { transform: rotate(90deg); }
+
+.nav-icon { width: 16px; height: 16px; display: inline-block; }
