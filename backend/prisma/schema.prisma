@@ -1,4 +1,4 @@
-// Prisma schema for EduTech (NeonDB - PostgreSQL)
+﻿// Prisma schema for EduTech (NeonDB - PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"
@@ -133,19 +133,28 @@ model ProfessorTurmaMateria {
 }
 
 model Template {
-  id         String  @id @default(cuid())
-  escola_id  String?
-  nome       String
-  regras_json Json
-  versao     String
-  ativo      Boolean @default(true)
+  id              String   @id @default(cuid())
+  escola_id       String
+  nome            String
+  slug            String   @unique
+  versao          Int      @default(1)
+  ativo           Boolean  @default(false)
+  metadata        Json?
+  schema_json     Json?
+  layout_hbs      String?
+  css_extra       String?  @default("")
+  regras_pag      Json?
+  mapping         Json?
+  source_docx_url String?
+  sample_data     Json?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  escola Escola? @relation(fields: [escola_id], references: [id])
+  escola Escola @relation(fields: [escola_id], references: [id])
   provas Prova[]
 
   @@index([escola_id])
 }
-
 model Prova {
   id             String      @id @default(cuid())
   escola_id      String
@@ -311,3 +320,4 @@ model Job {
 
   escola Escola? @relation(fields: [escola_id], references: [id])
 }
+
