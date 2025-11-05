@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { Card, Button, Modal } from '@edutech/ui';
-import { api } from '../../lib/api';
+import { api, API_BASE } from '../../lib/api';
 import SchoolPicker from '../../components/SchoolPicker';
 import { useSelectedSchool } from '../../admin/useAdminSchool';
 
@@ -139,3 +139,4 @@ export default function AdminTemplates() {
     </div>
   );
 }
+
