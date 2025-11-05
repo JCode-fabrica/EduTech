@@ -185,14 +185,12 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
   const invalida = prova.questoes.some((q) => q.tipo === 'objetiva' && (q.correta_index === null || q.correta_index === undefined));
   if (invalida) return res.status(400).json({ error: 'objetiva_sem_correta' });
 
-  // Template validations
-  const regras = (prova.template?.regras_json as any) || {};
-  if (Array.isArray(regras.tipos_permitidos)) {
-    const tipos = new Set(regras.tipos_permitidos as string[]);
-    const temNaoPermitido = prova.questoes.some((q) => !tipos.has(q.tipo));
-    if (temNaoPermitido) return res.status(400).json({ error: 'tipo_questao_nao_permitido' });
-  }
-  if (Array.isArray(regras.secoes) && regras.secoes.join(',') === 'objetivas,dissertativas') {
+  // Template validations (canonical)
+  const meta = ((prova.template as any)?.metadata) || {};
+  const regras = ((prova.template as any)?.regras_pag) || {};
+  // Optional: enforce order objetivas -> dissertativas if provided in metadata
+  const secoes = Array.isArray(meta.secoes) ? meta.secoes.join(',') : (typeof meta.secoes === 'string' ? meta.secoes : '');
+  if (secoes === 'objetivas,dissertativas') {
     let seenDissertativa = false;
     for (const q of prova.questoes.sort((a, b) => a.ordem - b.ordem)) {
       if (q.tipo === 'dissertativa') seenDissertativa = true;
@@ -201,7 +199,9 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
       }
     }
   }
-  if (regras.glossario_obrigatorio) {
+  // Optional: glossário obrigatório pode vir de metadata ou regras_pag
+  const glossarioObrig = Boolean(meta.glossario_obrigatorio || (regras && (regras as any).glossario_obrigatorio));
+  if (glossarioObrig) {
     const inlineInvalida = prova.questoes.some((q) => Array.isArray(q.images_inline_ids) && q.images_inline_ids.length > 0);
     if (inlineInvalida) return res.status(400).json({ error: 'glossario_obrigatorio_sem_inline' });
     // Checar que todas as imagens tem ref_code e sÃ£o referenciadas por alguma questÃ£o (images_refs)
@@ -233,4 +233,5 @@ router.post('/provas/:id/submit', requireAuth, async (req, res) => {
 });
 
 export default router;
+
 
