@@ -21,7 +21,12 @@ function getClient(): S3Client {
     s3Client = new S3Client({
       region: 'auto',
       endpoint: `https://${ENV.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId: ENV.R2_ACCESS_KEY_ID!, secretAccessKey: ENV.R2_SECRET_ACCESS_KEY! }
+      // Cloudflare R2 requires path-style addressing with AWS SDK v3
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: ENV.R2_ACCESS_KEY_ID!,
+        secretAccessKey: ENV.R2_SECRET_ACCESS_KEY!
+      }
     });
   }
   return s3Client;
