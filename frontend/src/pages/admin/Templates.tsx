@@ -17,8 +17,18 @@ export default function AdminTemplates() {
   const [detail, setDetail] = useState<any>(null);
   const [schemaText, setSchemaText] = useState('');
   const [mappingText, setMappingText] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const load = async () => { if (!schoolId) return; const t = await api<any[]>(`/templates?escola_id=${schoolId}`); setItems(t); };
+  const load = async () => {
+    try {
+      if (!schoolId) return;
+      const t = await api<any[]>(`/templates?escola_id=${schoolId}`);
+      setItems(t);
+      setError(null);
+    } catch (e: any) {
+      setError(e?.message || 'Erro ao carregar templates');
+    }
+  };
   useEffect(() => { load(); }, [schoolId]);
 
   const openImport = () => { setFile(null); setNome(''); setOpen(true); };
@@ -31,17 +41,30 @@ export default function AdminTemplates() {
       fd.append('docx', file);
       fd.append('escola_id', schoolId);
       fd.append('nome_sugerido', nome || file.name.replace(/\.docx$/i, ''));
-      const r = await fetch(`/api/templates/import-docx`, { method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-      if (!r.ok) throw new Error('IMPORT_FAILED');
+      const r = await fetch(`${API_BASE}/templates/import-docx`, { method: 'POST', body: fd, headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+      if (!r.ok) {
+        const t = await r.text();
+        const msg = `Import DOCX failed: ${r.status}\n${t}`;
+        setError(msg);
+        alert(msg);
+        return;
+      }
       const data = await r.json();
-      // Preview HTML
       const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: data.template_id }) });
       setDraft({ id: data.template_id, html: prev.html });
-      try { const d = await api<any>(`/templates/${data.template_id}`); setDetail(d); setSchemaText(JSON.stringify(d.schema_json||{}, null, 2)); setMappingText(JSON.stringify(d.mapping||{}, null, 2)); } catch {}
+      try {
+        const d = await api<any>(`/templates/${data.template_id}`);
+        setDetail(d);
+        setSchemaText(JSON.stringify(d.schema_json || {}, null, 2));
+        setMappingText(JSON.stringify(d.mapping || {}, null, 2));
+      } catch (e: any) {
+        setError(e?.message || 'Erro ao carregar detalhe');
+      }
       setOpen(false);
       setOpenReview(true);
-    } catch (e) {
-      alert('Falha ao importar DOCX');
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao importar DOCX');
+      alert(`Falha ao importar DOCX: ${e?.message || e}`);
     } finally {
       setBusy(false);
       await load();
@@ -49,28 +72,55 @@ export default function AdminTemplates() {
   };
 
   const preview = async (id: string) => {
-    const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: id }) });
-    setDraft({ id, html: prev.html });
-    try { const d = await api<any>(`/templates/${id}`); setDetail(d); setSchemaText(JSON.stringify(d.schema_json||{}, null, 2)); setMappingText(JSON.stringify(d.mapping||{}, null, 2)); } catch {}
-    setOpenReview(true);
+    try {
+      const prev = await api<any>('/render/preview', { method: 'POST', body: JSON.stringify({ template_id: id }) });
+      setDraft({ id, html: prev.html });
+      try {
+        const d = await api<any>(`/templates/${id}`);
+        setDetail(d);
+        setSchemaText(JSON.stringify(d.schema_json || {}, null, 2));
+        setMappingText(JSON.stringify(d.mapping || {}, null, 2));
+      } catch (e: any) {
+        setError(e?.message || 'Erro ao carregar detalhe');
+      }
+      setOpenReview(true);
+    } catch (e: any) {
+      setError(e?.message || 'Falha no preview');
+      alert(`Falha no preview: ${e?.message || e}`);
+    }
   };
 
   const publish = async () => {
     if (!draft) return;
-    // optional save structure before publish
-    try { await api(`/templates/${draft.id}`, { method: 'PUT', body: JSON.stringify({ schema_json: JSON.parse(schemaText||'{}'), mapping: JSON.parse(mappingText||'{}') }) }); } catch {}
-    await api(`/templates/${draft.id}/publish`, { method: 'POST' });
-    setOpenReview(false);
-    await load();
+    try {
+      await api(`/templates/${draft.id}/publish`, { method: 'POST' });
+      setOpenReview(false);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao publicar');
+      alert(`Falha ao publicar: ${e?.message || e}`);
+    }
   };
 
   const saveStructure = async () => {
     if (!draft) return;
-    try { await api(`/templates/${draft.id}`, { method: 'PUT', body: JSON.stringify({ schema_json: JSON.parse(schemaText||'{}'), mapping: JSON.parse(mappingText||'{}') }) }); alert('Estrutura salva'); } catch { alert('Falha ao salvar'); }
+    try {
+      await api(`/templates/${draft.id}`, { method: 'PUT', body: JSON.stringify({ schema_json: JSON.parse(schemaText || '{}'), mapping: JSON.parse(mappingText || '{}') }) });
+      alert('Estrutura salva');
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao salvar estrutura');
+      alert(`Falha ao salvar estrutura: ${e?.message || e}`);
+    }
   };
 
   return (
     <div className="container">
+      {error && (
+        <div className="surface card" style={{ borderLeft: '4px solid var(--danger)', padding: 10, marginBottom: 8 }}>
+          <strong>Erro</strong>
+          <div style={{ whiteSpace: 'pre-wrap', marginTop: 6 }}><code>{error}</code></div>
+        </div>
+      )}
       <div className="status-bar">
         <h2 style={{ margin: 0 }}>Templates</h2>
         <div className="row">
@@ -85,7 +135,7 @@ export default function AdminTemplates() {
               <span><strong>{t.nome}</strong> {t.ativo ? '' : <em className="muted">(rascunho)</em>} • v{t.versao}</span>
               <div className="row">
                 <Button variant="outline" onClick={() => preview(t.id)}>Preview</Button>
-                {!t.ativo && <Button onClick={() => api(`/templates/${t.id}/publish`, { method: 'POST' }).then(load)}>Publicar</Button>}
+                {!t.ativo && <Button onClick={() => api(`/templates/${t.id}/publish`, { method: 'POST' }).then(load).catch((e: any) => { setError(e?.message || 'Falha ao publicar'); alert(`Falha ao publicar: ${e?.message || e}`); })}>Publicar</Button>}
               </div>
             </div>
           ))}
@@ -139,4 +189,3 @@ export default function AdminTemplates() {
     </div>
   );
 }
-
