@@ -1,4 +1,4 @@
-﻿// Prisma schema for EduTech (NeonDB - PostgreSQL)
+// Prisma schema for EduTech (NeonDB - PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"
@@ -142,7 +142,7 @@ model Template {
   metadata        Json?
   schema_json     Json?
   layout_hbs      String?
-  css_extra       String?  @default(")
+  css_extra       String?  @default("")
   regras_pag      Json?
   mapping         Json?
   source_docx_url String?
